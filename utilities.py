@@ -20,6 +20,9 @@ def save_data(data, object_category="reports"):
     with open(data_file, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 
+def add_file(f, object_id, object_category="reports"):
+
+
 def verify_api_key(x_api_key: str = Header(...)):
     user = next((u for u in load_data("users") if u["api_key"] == x_api_key), {})
     if not user:

@@ -1,7 +1,8 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, File, UploadFile
 from pydantic import BaseModel, Field
-from typing import List, Optional, Literal
-from datetime import datetime, timezone
+from typing import List, Optional
+from datetime import datetime
+from enum import Enum
 
 from config import *
 from utilities import *
@@ -15,15 +16,27 @@ def root():
 # -------------------------------------------
 # CRUD Operations on Reports
 # -------------------------------------------
+class CustomFile(UploadFile):
+    id: int
+    path: str
+    name: str # filename
+    type: str # content_type
+
+class ReportContent(BaseModel):
+    text: Optional[str] = None
+    files: Optional[List[UploadFile]] = []
+
 class Report(BaseModel):
+    id: int
     title: str
-    content: Optional[str] = None
+    content: Optional[ReportContent] = None
     author: str
     timestamp: str
+     
 
 class ReportIn(BaseModel):
     title: str
-    content: Optional[str] = None
+    content: Optional[ReportContent] = None
 
 class ReportsListResponse(BaseModel):
     ok: bool
@@ -32,7 +45,12 @@ class ReportsListResponse(BaseModel):
 @app.post("/reports/add")
 async def add_report(report: ReportIn, session: bool = Depends(verify_authentication_approval)):
     reports = load_data("reports")
-    new_report = report.dict() | {"user_id": session.get("user_id"), "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+    files = report.content.files
+    new_id = len(reports)
+    files_list = []
+    for f in files:
+        files_list.append(add_file(f, new_id, "reports"))
+    new_report = {"id": new_id} | report.dict() | {"user_id": session.get("user_id"), "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
     reports.append(new_report)
     save_data(reports, "reports")
     return {"ok": True, "message": "Report added successfully", "report": new_report}
@@ -46,7 +64,7 @@ def get_reports():
 # CRUD Operations on Users
 # -------------------------------------------
 class User(BaseModel):
-    id: int = Field(frozen=True)
+    id: int
     username: str
     role: str
     phone: str
@@ -90,7 +108,6 @@ def get_user_profile(session: bool = Depends(verify_authentication_approval)):
 # -------------------------------------------
 # Login Operations
 # -------------------------------------------
-from enum import Enum
 class LoginParamType(str, Enum):
     username = "username"
     phone = "phone"
