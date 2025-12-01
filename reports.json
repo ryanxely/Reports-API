@@ -1,9 +1,26 @@
-[
-    {
-        "id": 1,
-        "title": "Burn out",
-        "content": "We completely burned out the codes",
-        "user_id": 2,
-        "timestamp": "2025-11-25 19:45:32"
+{
+    "2": {
+        "items": {
+            "01-12-2025": {
+                "records": [
+                    {
+                        "id": 1,
+                        "title": "string",
+                        "content": {
+                            "text": null,
+                            "files": []
+                        },
+                        "user_id": 2,
+                        "day": "01-12-2025",
+                        "time": "07:08:56"
+                    }
+                ],
+                "day": "01-12-2025",
+                "validated": false,
+                "validated_by": -1
+            }
+        },
+        "last_record_id": 1,
+        "user_id": 2
     }
-]
+}

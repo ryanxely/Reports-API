@@ -1,0 +1,10 @@
+{
+    "reports_file": "reports.json",
+    "users_file": "users.json",
+    "smtp_server": "smtp.galaxyconseils.com",
+    "tls_port": 587,
+    "admin_email": "contact@galaxyconseils.com",
+    "admin_email_password": "Livre1234@",
+    "last_user_id": 2,
+    "last_report_id": 1
+}

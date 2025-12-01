@@ -1,10 +1,9 @@
 from fastapi import FastAPI, Depends, File, UploadFile
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Dict
 from datetime import datetime
 from enum import Enum
 
-from config import *
 from utilities import *
 
 app = FastAPI(title="Report API", version="1.0.0")
@@ -16,7 +15,7 @@ def root():
 # -------------------------------------------
 # CRUD Operations on Reports
 # -------------------------------------------
-class CustomFile(UploadFile):
+class FileOut(BaseModel):
     id: int
     path: str
     name: str # filename
@@ -30,9 +29,20 @@ class Report(BaseModel):
     id: int
     title: str
     content: Optional[ReportContent] = None
-    author: str
-    timestamp: str
-     
+    user_id: str
+    day: str
+    time: str
+
+class DayReport(BaseModel):
+    day: str
+    records: List[Report]
+    validated: bool
+    validated_by: int
+
+class UserReports(BaseModel):
+    items: Dict[str, DayReport]
+    last_record_id: int
+    user_id: int
 
 class ReportIn(BaseModel):
     title: str
@@ -40,23 +50,47 @@ class ReportIn(BaseModel):
 
 class ReportsListResponse(BaseModel):
     ok: bool
-    reports: List[Report]
+    reports: Dict[str, UserReports]
 
 @app.post("/reports/add")
 async def add_report(report: ReportIn, session: bool = Depends(verify_authentication_approval)):
     reports = load_data("reports")
+    user_id = session.get("user_id")
+    current_day = datetime.now().strftime("%d-%m-%Y")
+    
+    user_reports = reports.get(user_id, {})
+    if not user_reports:
+        user_reports = {"items": {}, "last_record_id": 0, "user_id": user_id}
+    
+    day_report = user_reports.get(current_day, {})
+    if not day_report:
+        day_report = {"records": [], "day": current_day, "validated": False, "validated_by": -1}
+    
+    new_record_id = user_reports.get("last_record_id")+1
     files = report.content.files
-    new_id = len(reports)
-    files_list = []
+    files_info = []
     for f in files:
-        files_list.append(add_file(f, new_id, "reports"))
-    new_report = {"id": new_id} | report.dict() | {"user_id": session.get("user_id"), "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
-    reports.append(new_report)
+        files_info.append(save_file(f, new_record_id, "reports"))
+
+    report_content = {"text": report.dict().get("text"), "files": files_info}
+    new_report = {"id": new_record_id, "title": report.title, "content": report_content, "user_id": user_id, "day": current_day, "time": datetime.now().strftime("%H:%M:%S")}
+    day_report["records"].append(new_report)
+    user_reports["last_record_id"] = new_record_id
+    user_reports["items"][current_day] = day_report
+    reports[user_id] = user_reports
+
     save_data(reports, "reports")
+    save_data(config, "config")
     return {"ok": True, "message": "Report added successfully", "report": new_report}
 
 @app.get("/reports", response_model=ReportsListResponse)
-def get_reports():
+def get_reports(session: bool = Depends(verify_authentication_approval)):
+    reports = load_data("reports")
+    user_id = session.get("user_id")
+    return {"ok": True, "reports": {user_id: reports[f"{user_id}"]}}
+
+@app.get("/x-reports", response_model=ReportsListResponse)
+def get_reports(session: bool = Depends(verify_authentication_approval)):
     reports = load_data("reports")
     return {"ok": True, "reports": reports}
 
@@ -89,9 +123,12 @@ class UserProfileResponse(BaseModel):
 @app.post("/users/add")
 async def add_user(user_in: UserIn, session: bool = Depends(verify_admin)):
     users = load_data("users")
-    new_user = {"id": len(users)} | user_in.dict() | {"api_key": generate_api_key(), "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")} 
+    config = load_data("config")
+    config["last_user_id"] += 1
+    new_user = {"id": config["last_user_id"]} | user_in.dict() | {"api_key": generate_api_key(), "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")} 
     users.append(new_user)
     save_data(users, "users")
+    save_data(config, "config")
     return {"ok": True, "message": "User added successfully", "user": new_user}
 
 @app.get("/users", response_model=UsersListResponse)

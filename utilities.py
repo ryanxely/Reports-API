@@ -1,6 +1,5 @@
 from pathlib import Path
-from fastapi import Header, HTTPException
-from config import *
+from fastapi import Header, HTTPException, UploadFile
 import secrets
 
 def load_data(object_category="reports"):
@@ -20,8 +19,20 @@ def save_data(data, object_category="reports"):
     with open(data_file, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 
-def add_file(f, object_id, object_category="reports"):
-
+async def save_file(f: UploadFile, object_id, object_category="reports"):
+    name = f.filename
+    ext = name.split(".")[-1]
+    path = f"files/{object_id}/{name}.{ext}"
+    type = f.content_type
+    
+    with open(path, "wb") as out_file:
+        out_file.write(await f.read())
+    
+    config = load_data("config")
+    config["last_file_id"] += 1
+    save_data(config, "config")
+    
+    return {"id": config["last_file_id"], "name": name, "type": type, "path": path}
 
 def verify_api_key(x_api_key: str = Header(...)):
     user = next((u for u in load_data("users") if u["api_key"] == x_api_key), {})
@@ -61,9 +72,10 @@ def generate_verification_code():
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+config = load_data("config")
 def send_verification_code(recipient_email, code):
     # SMTP server details
-    smtp_server, port, sender_email, password = SMTP_SERVER, TLS_PORT, ADMIN_EMAIL, ADMIN_EMAIL_PASSWORD
+    smtp_server, port, sender_email, password = config.get("smtp_server"), config.get("tls_port"), config.get("admin_email"), config.get("admin_email_password")
     # Establish connection
     server = smtplib.SMTP(smtp_server, port)
     server.starttls() # Enable encryption
