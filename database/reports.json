@@ -1,0 +1,62 @@
+{
+    "1": {
+        "items": {
+            "03-12-2025": {
+                "records": [
+                    {
+                        "id": 4,
+                        "title": "Fucking",
+                        "content": {
+                            "text": "Hello fuck you",
+                            "files": [
+                                {
+                                    "id": 3,
+                                    "name": "0408(1).mp4",
+                                    "type": null,
+                                    "path": "files\\reports\\4\\3.mp4"
+                                },
+                                {
+                                    "id": 4,
+                                    "name": "City Hunter - Super Girl.mp3",
+                                    "type": null,
+                                    "path": "files\\reports\\4\\4.mp3"
+                                }
+                            ]
+                        },
+                        "user_id": 1,
+                        "day": "03-12-2025",
+                        "time": "10:18:35"
+                    },
+                    {
+                        "id": 5,
+                        "title": "I just fucked her",
+                        "content": {
+                            "text": "Ficking is a good thing. When you fuck, you grow",
+                            "files": [
+                                {
+                                    "id": 5,
+                                    "name": "Untitled.png",
+                                    "type": "image/png",
+                                    "path": "files\\reports\\5\\5.png"
+                                },
+                                {
+                                    "id": 6,
+                                    "name": "Tableau de Bord pour l.docx",
+                                    "type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                                    "path": "files\\reports\\5\\6.docx"
+                                }
+                            ]
+                        },
+                        "user_id": 1,
+                        "day": "03-12-2025",
+                        "time": "10:22:00"
+                    }
+                ],
+                "day": "03-12-2025",
+                "validated": false,
+                "validated_by": -1
+            }
+        },
+        "user_id": 1
+    }
+}

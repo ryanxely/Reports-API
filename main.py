@@ -135,7 +135,7 @@ async def add_post(text: str = Form(""), files: List[UploadFile] = File([])):
     return {"ok": True, "message": "Post added successfully", "post": new_post}
 
 @app.post("/reports/add")
-async def add_report(report: ReportIn, files: List[UploadFile] = File([]), session: dict = Depends(verify_authentication_approval)):
+async def add_report(title: str = Form(...), text: Optional[str] = Form(""), files: List[UploadFile] = File([]), session: dict = Depends(verify_authentication_approval)):
     config = load_data("config")
     new_record_id = config.get("last_record_id")+1
     config["last_record_id"] = new_record_id
@@ -155,8 +155,8 @@ async def add_report(report: ReportIn, files: List[UploadFile] = File([]), sessi
         filename = f.filename
         files_info.append(await save_file(f, f"files/reports/{new_record_id}/{filename}"))
 
-    report_content = {"text": report.text, "files": files_info}
-    new_report = {"id": new_record_id, "title": report.title, "content": report_content, "user_id": user_id, "day": current_day, "time": now("time")}
+    report_content = {"text": text, "files": files_info}
+    new_report = {"id": new_record_id, "title": title, "content": report_content, "user_id": user_id, "day": current_day, "time": now("time")}
     day_report["records"].append(new_report)
     user_reports["items"][current_day] = day_report
     reports[str(user_id)] = user_reports
@@ -223,5 +223,5 @@ async def get_protected_file(path: str, session: dict = Depends(verify_authentic
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=5060)
+    uvicorn.run(app, host="0.0.0.0", port=500)
 
