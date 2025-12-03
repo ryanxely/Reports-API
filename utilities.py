@@ -4,7 +4,7 @@ from fastapi import Header, HTTPException, UploadFile
 import secrets
 
 def load_data(object_category="reports"):
-    data_file = f"{object_category}.json"
+    data_file = f"database/{object_category}.json"
     if Path(data_file).exists():
         import json
         with open(data_file, "r", encoding="utf-8") as f:
@@ -17,7 +17,7 @@ def load_data(object_category="reports"):
 def save_data(data, object_category="reports"):
     print(f"saving {object_category}...\n", "Received data: \n", data, "\n")
     import json
-    data_file = f"{object_category}.json"
+    data_file = f"database/{object_category}.json"
     with open(data_file, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 
