@@ -111,43 +111,43 @@ def get_user_profile(session: dict = Depends(verify_authentication_approval)):
     user_profile = users.get(str(session.get("user_id")))
     return {"ok": True, "user": user_profile}
 
-@app.patch("/profile/edit")
-async def edit_profile(username: Optional[str] = Form(""), phone: Optional[str] = Form(""), profile_image: Optional[UploadFile] = File(), session: dict = Depends(verify_authentication_approval)):
-    if files_to_delete is None:
-        files_to_delete = []
-    reports = load_data("reports")
-    user_id = session.get("user_id")
+# @app.patch("/profile/edit")
+# async def edit_profile(username: Optional[str] = Form(""), phone: Optional[str] = Form(""), profile_image: Optional[UploadFile] = File(), session: dict = Depends(verify_authentication_approval)):
+#     if files_to_delete is None:
+#         files_to_delete = []
+#     reports = load_data("reports")
+#     user_id = session.get("user_id")
 
-    user_reports = reports.get(str(user_id), {})
-    if not user_reports:
-        return {"ok": True, "message": "You have no reports"}
+#     user_reports = reports.get(str(user_id), {})
+#     if not user_reports:
+#         return {"ok": True, "message": "You have no reports"}
 
-    day_report = user_reports.get("items").get(now("date"), {})
-    if not day_report:
-        return {"ok": True, "message": "You have no active reports"}
-    print("day_report", day_report)
+#     day_report = user_reports.get("items").get(now("date"), {})
+#     if not day_report:
+#         return {"ok": True, "message": "You have no active reports"}
+#     print("day_report", day_report)
 
-    records = day_report.get("records")
-    record_index = next((i for i,u in enumerate(records) if u.get("id") == id), -1)
-    if record_index == -1:
-        raise HTTPException(status_code=401, detail="Invalid report index !")
+#     records = day_report.get("records")
+#     record_index = next((i for i,u in enumerate(records) if u.get("id") == id), -1)
+#     if record_index == -1:
+#         raise HTTPException(status_code=401, detail="Invalid report index !")
 
-    new_files_info = await delete_files(records[record_index]["content"]["files"], set(files_to_delete))
+#     new_files_info = await delete_files(records[record_index]["content"]["files"], set(files_to_delete))
 
-    for f in files:
-        filename = f.filename
-        new_files_info.append(await save_file(f, f"files/reports/{id}/{filename}"))
+#     for f in files:
+#         filename = f.filename
+#         new_files_info.append(await save_file(f, f"files/reports/{id}/{filename}"))
 
-    day_report["records"][record_index]["title"] = title or records[record_index]["title"]
-    day_report["records"][record_index]["last_edit_at"] = now("time")
-    day_report["records"][record_index]["content"]["text"] = text or records[record_index]["content"]["text"]
-    day_report["records"][record_index]["content"]["files"] = new_files_info
+#     day_report["records"][record_index]["title"] = title or records[record_index]["title"]
+#     day_report["records"][record_index]["last_edit_at"] = now("time")
+#     day_report["records"][record_index]["content"]["text"] = text or records[record_index]["content"]["text"]
+#     day_report["records"][record_index]["content"]["files"] = new_files_info
 
-    user_reports["items"][now("date")].update(day_report)
-    reports[str(user_id)].update(user_reports)
+#     user_reports["items"][now("date")].update(day_report)
+#     reports[str(user_id)].update(user_reports)
 
-    save_data(reports, "reports")
-    return {"ok": True, "message": "Record edited successfully", "report": day_report["records"][record_index]}
+#     save_data(reports, "reports")
+#     return {"ok": True, "message": "Record edited successfully", "report": day_report["records"][record_index]}
 
 
 # -------------------------------------------
