@@ -11,7 +11,9 @@ origins = [
     "https://srvgc.tailcca3c2.ts.net",
     "http://127.0.0.1:5050",
     "http://127.0.0.1",
+    "http://127.0.0.1:5500",
     "http://localhost:5050",
+    "http://localhost:5500",
     "http://localhost",
     "http://srvgc:5050"
 ]
@@ -48,8 +50,8 @@ async def login(credentials: Credentials):
     session = {"credentials": credentials, "user_id": user.get("id"), "code": generate_verification_code(), "approved": False, "start_time": "", "api_key": user.get("api_key")} 
     sessions[user.get("api_key")] = session
     save_data(sessions, "sessions")
-    send_verification_code(user.get("email"), session.get("code"))
-    return {"ok": True, "api_key": user.get("api_key"), "message": "We sent you a verification code on the following email address: " + user.get("email")}
+    # send_verification_code(user.get("email"), session.get("code"))
+    return {"ok": True, "api_key": user.get("api_key"), "message": "We sent you a verification code on your email address", "email": user.get("email")}
 
 
 @app.post("/auth/login/verify")
@@ -87,6 +89,7 @@ def logout(session: dict = Depends(verify_authentication)):
 # -------------------------------------------
 # CRUD Operations on Users
 # -------------------------------------------
+
 @app.post("/users/add")
 async def add_user(user_in: UserIn, authorized: bool = Depends(only_admin)):
     config = load_data("config")
@@ -301,5 +304,5 @@ async def get_protected_file(path: str, session: dict = Depends(verify_authentic
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=5060)
+    uvicorn.run(app, host="0.0.0.0", port=500)
 

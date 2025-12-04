@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Profil — Mini App</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link href="https://fonts.googleapis.com/css2?family=Chokokutai&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="styles/profile.css">
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>👤 Profil</h1>
+            <div class="nav-links">
+                    <a href="index.html" class="nav-link">📝 Créer un rapport</a>
+                    <a href="view.html" class="nav-link">📋 Voir mes rapports</a>
+                    <button class="nav-link logout-btn" onclick="handleLogout()">🚪 Déconnexion</button>
+            </div>
+        </div>
+
+        <div id="statusMessage" class="status"></div>
+
+        <div class="profile-card">
+            <div id="profileContent" class="loading">Chargement du profil...</div>
+        </div>
+    </div>
+
+    <!-- Telegram Web App script -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <script src="config.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/dom-helpers.js"></script>
+    <script src="js/file-previews.js"></script>
+
+    <script>
+        // Auth check
+        requireAuth();
+
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        const statusMessage = document.getElementById('statusMessage');
+        const profileContent = document.getElementById('profileContent');
+
+        let currentProfileData = null;
+        let profileImagePreview = null;
+
+        // ===== Display Status =====
+        function displayStatus(message, isError = false) {
+            statusMessage.innerText = message;
+            statusMessage.className = isError ? 'status error' : 'status success';
+            setTimeout(() => {
+                statusMessage.className = 'status';
+            }, 5000);
+        }
+
+        // ===== Logout =====
+        window.handleLogout = function() {
+            logout();
+            window.location.href = 'login.html';
+        };
+
+        // ===== Load Profile =====
+        async function loadProfile() {
+            try {
+                const authToken = getAuthToken();
+                if (!authToken) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                const userProfile = getUserProfile();
+                if (!userProfile) {
+                    displayStatus('Échec du chargement du profil', true);
+                    return;
+                }
+
+                currentProfileData = userProfile;
+                renderProfileForm();
+            } catch (error) {
+                console.error('Error loading profile:', error);
+                displayStatus('Erreur lors du chargement du profil : ' + error.message, true);
+            }
+        }
+
+        // ===== Render Profile Form =====
+        function renderProfileForm() {
+            const user = currentProfileData;
+            const roleDisplay = user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'User';
+
+            let html = `
+                <div class="profile-avatar-section">
+                    <img id="avatarPreview" class="profile-avatar ${user.profile_img ? 'has-image' : ''}" 
+                         src="${user.profile_img || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Ctext x=%2212%22 y=%2216%22 text-anchor=%22middle%22 font-size=%2220%22%3E👤%3C/text%3E%3C/svg%3E'}" 
+                         alt="Profile Picture">
+                    <div class="avatar-upload" style="display: none">
+                        <input type="file" id="profileImgInput" accept="image/*">
+                        <button class="avatar-upload-btn" onclick="document.getElementById('profileImgInput').click()">
+                            📷 Changer l'avatar
+                        </button>
+                    </div>
+                </div>
+
+                <form id="profileForm">
+                    <div class="form-group">
+                        <label for="username">Nom d'utilisateur</label>
+                        <input type="text" id="username" value="${user.username || ''}" placeholder="Entrez le nom d'utilisateur" readonly>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email (lecture seule)</label>
+                        <input type="email" id="email" value="${user.email || ''}" readonly>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="phone">Téléphone</label>
+                        <input type="tel" id="phone" value="${user.phone || ''}" placeholder="Entrez le numéro de téléphone" readonly>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="role">Rôle</label>
+                        <input type="text" id="role" value="${roleDisplay}" readonly>
+                    </div>
+
+                    <div class="form-actions" style="display: none">
+                        <button type="submit" class="btn btn-save">💾 Enregistrer</button>
+                        <button type="button" class="btn btn-cancel" onclick="window.location.href='index.html'">Annuler</button>
+                    </div>
+                </form>
+            `;
+
+            profileContent.innerHTML = html;
+            profileContent.classList.remove("loading")
+
+            // Set up file input listener
+            document.getElementById('profileImgInput').addEventListener('change', handleProfileImageSelect);
+
+            // Set up form submission
+            document.getElementById('profileForm').addEventListener('submit', handleProfileSave);
+        }
+
+        // ===== Handle Profile Image Select =====
+        function handleProfileImageSelect(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const dataUrl = evt.target.result;
+                profileImagePreview = dataUrl;
+                document.getElementById('avatarPreview').src = dataUrl;
+                document.getElementById('avatarPreview').classList.add('has-image');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // ===== Handle Profile Save =====
+        async function handleProfileSave(e) {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value.trim();
+            const phone = document.getElementById('phone').value.trim();
+
+            if (!username) {
+                displayStatus('Le nom d\'utilisateur est requis', true);
+                return;
+            }
+
+            try {
+                displayStatus('Enregistrement du profil...');
+
+                // Build FormData for multipart upload
+                const formData = new FormData();
+                formData.append('username', username);
+                formData.append('phone', phone);
+
+                // If user selected a new profile image, include it
+                if (profileImagePreview) {
+                    const blob = dataURLToBlob(profileImagePreview);
+                    formData.append('profile_img', blob, 'profile.png');
+                }
+
+                const authToken = getAuthToken();
+                const headers = {
+                    'accept': 'application/json'
+                };
+
+                if (authToken) {
+                    headers['Authorization'] = 'Bearer ' + authToken;
+                }
+
+                // Send PATCH request to update profile
+                const res = await fetch(getApiUrl(CONFIG.PROFILE_UPDATE), {
+                    method: 'PATCH',
+                    headers: headers,
+                    body: formData
+                });
+
+                if (res.status === 401) {
+                    displayStatus('Session expired. Redirecting to login...', true);
+                    handleSessionExpiry();
+                    return;
+                }
+
+                if (!res.ok) {
+                    const txt = await res.text();
+                    throw new Error(`Server error ${res.status}: ${txt}`);
+                }
+
+                const json = await res.json();
+                if (json && json.ok) {
+                    // Update stored profile
+                    setUserProfile(json.user);
+                    currentProfileData = json.user;
+                    profileImagePreview = null;
+                    displayStatus('✅ Profil mis à jour avec succès !');
+
+                    // Reload form after update
+                    setTimeout(() => {
+                        renderProfileForm();
+                    }, 1500);
+                } else {
+                    throw new Error(json?.message || 'Unknown server response');
+                }
+            } catch (error) {
+                console.error('Error saving profile:', error);
+                displayStatus('❌ Échec de l\'enregistrement du profil : ' + error.message, true);
+            }
+        }
+
+        // ===== Initialize =====
+        loadProfile();
+    </script>
+</body>
+
+</html>

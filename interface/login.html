@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Connexion — Mini App</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Chokokutai&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="styles/login.css">
+</head>
+
+<body>
+    <div class="login-container">
+        <div class="logo">
+            <div class="logo-icon">📝</div>
+            <h1>Editeur de Rapports</h1>
+            <p>Mini App</p>
+        </div>
+
+        <div class="status" id="statusMessage"></div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="loginParam">Méthode de connexion</label>
+                <select id="loginParam" required>
+                    <option value="username" selected>Nom d'utilisateur</option>
+                    <option value="email">Email</option>
+                    <option value="phone">Numéro de téléphone</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="value">Valeur</label>
+                <input 
+                    type="text" 
+                    id="value" 
+                    placeholder="Entrez votre nom d'utilisateur" 
+                    required 
+                    autocomplete="off"
+                >
+            </div>
+
+            <button type="submit" class="login-btn" id="loginBtn">
+                <span>Se connecter</span>
+                <div class="loading-spinner"></div>
+            </button>
+        </form>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/dom-helpers.js"></script>
+    <script>
+        // ===== Configuration =====
+        const AUTH_API_URL = getApiUrl(CONFIG.AUTH_LOGIN);
+
+        // ===== DOM Elements =====
+        const loginForm = document.getElementById('loginForm');
+        const loginBtn = document.getElementById('loginBtn');
+        const statusMessage = document.getElementById('statusMessage');
+        const loginParamSelect = document.getElementById('loginParam');
+        const valueInput = document.getElementById('value');
+
+        // ===== Check if already logged in =====
+        function checkExistingSession() {
+            if (isAuthenticated()) {
+                window.location.href = 'index.html';
+            }
+        }
+
+        // ===== Handle Login =====
+        async function handleLogin(e) {
+            e.preventDefault();
+
+            const loginParam = loginParamSelect.value;
+            const value = valueInput.value.trim();
+
+            if (!value) {
+                showStatus(statusMessage, 'Veuillez saisir vos informations', true);
+                return;
+            }
+
+            // Show loading state
+            setButtonLoading(loginBtn, true);
+
+            try {
+                const response = await fetch(AUTH_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        login_param: loginParam,
+                        value: value
+                    })
+                });
+
+                const data = await response.json();
+
+                console.log(data)
+
+                if (!response.ok) {
+                    throw new Error(data.detail || data.message || 'Échec de la connexion');
+                }
+
+                // Store pending login info and extract API keys
+                const pending = {
+                    loginParam: loginParam,
+                    value: value,
+                    serverResponse: data,
+                    createdAt: new Date().toISOString()
+                };
+                setPendingLogin(pending);
+                
+                // Extract and store API keys from response
+                extractApiKeysFromResponse(data);
+
+                showStatus(statusMessage, '✅ Connexion acceptée. Entrez le code à 5 chiffres envoyé. Redirection...');
+
+                // Redirect to OTP verification page
+                setTimeout(() => {
+                    window.location.href = 'otp.html';
+                }, 700);
+
+            } catch (error) {
+                console.error('Login error:', error);
+                showStatus(statusMessage, '❌ ' + error.message, true);
+                setButtonLoading(loginBtn, false);
+            }
+        }
+
+        // ===== Update placeholder based on login method =====
+        loginParamSelect.addEventListener('change', (e) => {
+            const loginParam = e.target.value;
+            const placeholders = {
+                'username': "Entrez votre nom d'utilisateur",
+                'email': 'Entrez votre adresse e-mail',
+                'phone': 'Entrez votre numéro de téléphone (ex. +33123456789)'
+            };
+            valueInput.placeholder = placeholders[loginParam] || 'Veuillez saisir vos informations';
+            valueInput.focus();
+        });
+
+        // ===== Form Submission =====
+        loginForm.addEventListener('submit', handleLogin);
+
+        // ===== Initialization =====
+        window.addEventListener('load', () => {
+            checkExistingSession();
+            
+            // Optional: Auto-fill demo username for testing
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('demo')) {
+                valueInput.value = 'ruben';
+            }
+        });
+    </script>
+</body>
+
+</html>

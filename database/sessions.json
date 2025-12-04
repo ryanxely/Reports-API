@@ -1,3 +1,13 @@
 {
-    
+    "F0D9F2419F48410198DBA37731181547E2E9B0BE82A7287A": {
+        "credentials": {
+            "login_param": "username",
+            "value": "ryan"
+        },
+        "user_id": 1,
+        "code": "03782",
+        "approved": true,
+        "start_time": "04-12-2025 21:04:39",
+        "api_key": "F0D9F2419F48410198DBA37731181547E2E9B0BE82A7287A"
+    }
 }

@@ -1,3 +1,13 @@
 {
-    
+    "1": {
+        "items": {
+            "04-12-2025": {
+                "records": [],
+                "day": "04-12-2025",
+                "validated": false,
+                "validated_by": -1
+            }
+        },
+        "user_id": 1
+    }
 }

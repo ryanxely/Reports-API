@@ -1,12 +1,10 @@
 {
-    "reports_file": "reports.json",
-    "users_file": "users.json",
     "smtp_server": "smtp.galaxyconseils.com",
     "tls_port": 587,
     "admin_email": "contact@galaxyconseils.com",
     "admin_email_password": "Livre1234@",
-    "last_user_id": 4,
-    "last_record_id": 6,
-    "last_file_id": 13,
-    "last_post_id": 2
+    "last_user_id": 0,
+    "last_record_id": 1,
+    "last_file_id": 3,
+    "last_post_id": 0
 }

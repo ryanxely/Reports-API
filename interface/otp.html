@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Vérification OTP — Mini App</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Chokokutai&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="styles/otp.css">
+</head>
+
+<body>
+    <div class="card">
+        <h1>Entrez le code</h1>
+        <p>Nous avons envoyé un code à 5 chiffres<span id="otp-email-target"></span>. Saisissez-le ci-dessous pour
+            terminer la connexion.</p>
+
+        <div id="codeBoxes" style="display:flex;justify-content:center;gap:10px;margin-bottom:14px;">
+            <input class="digit-box" inputmode="numeric" pattern="[0-9]*" maxlength="1" />
+            <input class="digit-box" inputmode="numeric" pattern="[0-9]*" maxlength="1" />
+            <input class="digit-box" inputmode="numeric" pattern="[0-9]*" maxlength="1" />
+            <input class="digit-box" inputmode="numeric" pattern="[0-9]*" maxlength="1" />
+            <input class="digit-box" inputmode="numeric" pattern="[0-9]*" maxlength="1" />
+        </div>
+
+        <button id="verifyBtn" class="btn" disabled>Vérifier le code</button>
+        <button id="resendBtn" class="btn" style="margin-top:10px;background:#eee;color:#333;font-weight:600;">Renvoyer
+            le code</button>
+
+        <div id="status" class="status"></div>
+        <div class="small">Vous n'avez pas reçu le code ? Utilisez <strong>Renvoyer le code</strong>.</div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/dom-helpers.js"></script>
+    <script>
+        // ===== Config =====
+        const VERIFY_API_URL = getApiUrl(CONFIG.AUTH_VERIFY);
+        const AUTH_API_URL = getApiUrl(CONFIG.AUTH_LOGIN);
+
+        const digitBoxes = Array.from(document.querySelectorAll('.digit-box'));
+        const verifyBtn = document.getElementById('verifyBtn');
+        const resendBtn = document.getElementById('resendBtn');
+        const statusEl = document.getElementById('status');
+
+        // Ensure we have a pending login
+        const pending = getPendingLogin();
+        if (!pending) {
+            showStatus(statusEl, 'Aucune connexion en attente. Redirection vers la page de connexion...', true);
+            setTimeout(() => window.location.href = 'login.html', 2000);
+        }
+
+        // Resolve verify API key from localStorage or from pending server response
+        let VERIFY_API_KEY = getApiKey('verify');
+        if (!VERIFY_API_KEY && pending) {
+            const srv = pending.serverResponse || {};
+            VERIFY_API_KEY = srv?.verify_api_key || srv?.x_api_key || srv?.api_key || srv?.['x-api-key'];
+        }
+
+        console.log(pending)
+        // Verify target email
+        document.querySelector("#otp-email-target").innerHTML = pending.serverResponse.email ? ` à l'adresse ${pending.serverResponse.email}` : ``
+
+        // If there's no verify API key available, disable verify/resend and prompt user to re-login
+        if (!VERIFY_API_KEY) {
+            showStatus(statusEl, 'Clé API de vérification manquante. Veuillez revenir et réessayer la connexion.', true);
+            verifyBtn.disabled = true;
+            resendBtn.disabled = true;
+        }
+
+        // helper: get code from boxes
+        function getCodeFromBoxes() {
+            return digitBoxes.map(d => d.value.trim()).join('');
+        }
+
+        // focus first empty box on load
+        (function focusFirst() {
+            for (const d of digitBoxes) { if (!d.value) { d.focus(); return; } }
+            digitBoxes[digitBoxes.length - 1].focus();
+        })();
+
+        // setup keyboard behavior
+        var T = null // Timer for auto verification
+        digitBoxes.forEach((el, idx) => {
+            el.addEventListener('input', (e) => {
+                const v = e.target.value.replace(/[^0-9]/g, '');
+                e.target.value = v;
+                console.log("Box " + idx)
+                if (v && idx < digitBoxes.length - 1) {
+                    digitBoxes[idx + 1].focus();
+                    verifyBtn.disabled = true;
+                }
+                else {
+                    if (idx == digitBoxes.length) verifyBtn.disabled = false;
+                    T = setTimeout(() => {
+                        verifyOtp()
+                    }, 300)
+                }
+            });
+
+            el.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') verifyBtn.click()
+                else {
+                    clearTimeout(T)
+                    if (e.key == 'Backspace') {
+                        digitBoxes[idx].value = null
+                        digitBoxes[idx - 1].focus();
+                    }
+                    if (e.key === 'ArrowLeft' && idx > 0) { digitBoxes[idx - 1].focus(); }
+                    if (e.key === 'ArrowRight' && idx < digitBoxes.length - 1) { digitBoxes[idx + 1].focus(); }
+                }
+            });
+
+            el.addEventListener('paste', (ev) => {
+                ev.preventDefault();
+                const text = (ev.clipboardData || window.clipboardData).getData('text') || '';
+                const digits = text.replace(/\D/g, '').slice(0, digitBoxes.length).split('');
+                digits.forEach((ch, i) => { digitBoxes[i].value = ch; });
+                const next = Math.min(digits.length, digitBoxes.length) - 1;
+                digitBoxes[Math.min(digits.length, digitBoxes.length - 1)].focus();
+                setTimeout(() => {
+                    if (digits.length == digitBoxes.length) verifyOtp()
+                }, 300)
+            });
+        });
+
+        async function verifyOtp() {
+            const code = getCodeFromBoxes();
+            if (!new RegExp('^\\d{' + digitBoxes.length + '}$').test(code)) {
+                showStatus(statusEl, 'Please enter a valid ' + digitBoxes.length + '-digit code', true);
+                return;
+            }
+
+            verifyBtn.disabled = true;
+            showStatus(statusEl, 'Verifying...');
+
+            try {
+                const res = await fetch(VERIFY_API_URL + '?code=' + encodeURIComponent(code), {
+                    method: 'POST',
+                    headers: {
+                        'accept': 'application/json',
+                        'x-api-key': VERIFY_API_KEY
+                    },
+                    body: ''
+                });
+
+                const data = await res.json();
+
+                if (!res.ok || !data || data.ok !== true) {
+                    throw new Error(data?.message || 'Verification failed');
+                }
+
+                // Use token from response if available.
+                const token = data.token || data.access_token || ('token_' + Date.now());
+                setAuthToken(token);
+
+                // Fetch user profile to get full user details including role and api_key
+                try {
+                    const profileRes = await fetch(getApiUrl(CONFIG.PROFILE), {
+                        method: 'GET',
+                        headers: {
+                            'accept': 'application/json',
+                            'x-api-key': VERIFY_API_KEY
+                        }
+                    });
+
+                    if (profileRes.ok) {
+                        const profileData = await profileRes.json();
+                        if (profileData.ok && profileData.user) {
+                            // Store complete user profile
+                            setUserProfile(profileData.user);
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Failed to fetch user profile', e);
+                }
+
+                // Remove pending
+                clearPendingLogin();
+
+                showStatus(statusEl, '✅ Verified! Redirecting...');
+                setTimeout(() => { window.location.href = 'index.html'; }, 700);
+
+            } catch (err) {
+                console.error('OTP verify error', err);
+                showStatus(statusEl, '❌ ' + (err.message || 'Verification failed'), true);
+                verifyBtn.disabled = false;
+            }
+        }
+
+        verifyBtn.addEventListener('click', verifyOtp);
+
+        // Resend OTP implementation
+        let resendCooldown = 30; // seconds
+        let resendTimer = null;
+
+        function startResendCooldown() {
+            resendBtn.disabled = true;
+            let remaining = resendCooldown;
+            resendBtn.innerText = 'Renvoyer le code (' + remaining + 's)';
+            resendTimer = setInterval(() => {
+                remaining -= 1;
+                if (remaining <= 0) {
+                    clearInterval(resendTimer);
+                    resendBtn.disabled = false;
+                    resendBtn.innerText = 'Renvoyer le code';
+                } else {
+                    resendBtn.innerText = 'Renvoyer le code (' + remaining + 's)';
+                }
+            }, 1000);
+        }
+
+        async function resendOtp() {
+            const pendingData = getPendingLogin();
+            if (!pendingData) {
+                showStatus(statusEl, 'Aucune connexion en attente. Redirection vers la page de connexion...', true);
+                setTimeout(() => window.location.href = 'login.html', 800);
+                return;
+            }
+
+            resendBtn.disabled = true;
+            showStatus(statusEl, 'Renvoyer le code...');
+
+            try {
+                const res = await fetch(AUTH_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ login_param: pendingData.loginParam, value: pendingData.value })
+                });
+
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data?.detail || data?.message || 'Échec de l\'envoi du code');
+                }
+
+                // Update pending (in case server returns any relevant info)
+                const updatedPending = Object.assign({}, pendingData, { serverResponse: data, resentAt: new Date().toISOString() });
+                setPendingLogin(updatedPending);
+
+                // If server returned a verify API key during resend, persist it
+                extractApiKeysFromResponse(data);
+
+                showStatus(statusEl, '✅ OTP resent. Please check your device.');
+                startResendCooldown();
+            } catch (err) {
+                console.error('Resend error', err);
+                showStatus(statusEl, '❌ ' + (err.message || 'Échec de l\'envoi du code'), true);
+                resendBtn.disabled = false;
+            }
+        }
+
+        resendBtn.addEventListener('click', resendOtp);
+
+        // autofill from URL ?code=12345
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('code')) {
+            const c = urlParams.get('code').slice(0, digitBoxes.length).split('');
+            c.forEach((ch, i) => { if (digitBoxes[i]) digitBoxes[i].value = ch; });
+            setTimeout(() => verifyOtp(), 300);
+        }
+    </script>
+</body>
+
+</html>
