@@ -17,7 +17,6 @@ const CONFIG = {
     REPORTS_EDIT: '/reports/edit',
     REPORTS_DELETE: '/reports/delete',
     
-    // User endpoints
     PROFILE: '/profile',
     PROFILE_UPDATE: '/profile/edit',
     USERS_GET: '/users'

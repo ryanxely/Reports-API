@@ -26,7 +26,7 @@ async def login(credentials: Credentials):
     if sessions.get(user.get("api_key"), {}).get("approved"):
         old_session_info = logout(sessions.get(user.get("api_key"))).get("session_info")
         result = await login(Credentials(**old_session_info.get("credentials")))
-        return {"ok": True, "api_key": result.get("api_key"), "message": "Your previous session has been reinitialised. Please grant us the new verification code we sent you"}
+        return {"ok": True, "api_key": result.get("api_key"), "message": "Your previous session has been reinitialised. Please grant us the new verification code we sent you", "email": user.get("email")}
     session = {"credentials": credentials, "user_id": user.get("id"), "code": generate_verification_code(), "approved": False, "start_time": "", "api_key": user.get("api_key")} 
     sessions[user.get("api_key")] = session
     save_data(sessions, "sessions")
