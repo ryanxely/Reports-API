@@ -41,6 +41,12 @@ async def custom_404_handler(request, exc):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=80)
+    import logging
+    logging.basicConfig(
+        filename="app.log",
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
+    uvicorn.run(app, host="0.0.0.0", port=82, log_config=None)
     validate_reports()
 

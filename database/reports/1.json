@@ -1,0 +1,25 @@
+{
+    "items": {
+        "15-12-2025": {
+            "records": [
+                {
+                    "id": 1,
+                    "title": "R",
+                    "content": {
+                        "text": "<p><br></p>",
+                        "files": [],
+                        "extra_fields": []
+                    },
+                    "user_id": 1,
+                    "day": "15-12-2025",
+                    "created_at": "17:12:01",
+                    "last_edit_at": ""
+                }
+            ],
+            "day": "15-12-2025",
+            "validated": false,
+            "validated_by": -1
+        }
+    },
+    "user_id": 1
+}

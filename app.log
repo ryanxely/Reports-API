@@ -1,0 +1,12 @@
+2025-12-15 17:20:42,606 - uvicorn.error - INFO - Started server process [15380]
+2025-12-15 17:20:42,607 - uvicorn.error - INFO - Waiting for application startup.
+2025-12-15 17:20:42,607 - uvicorn.error - INFO - Application startup complete.
+2025-12-15 17:20:42,608 - uvicorn.error - INFO - Uvicorn running on http://0.0.0.0:82 (Press CTRL+C to quit)
+2025-12-15 17:41:13,293 - uvicorn.access - INFO - 192.168.1.136:51346 - "GET /index.html HTTP/1.1" 304
+2025-12-15 17:41:13,454 - uvicorn.access - INFO - 192.168.1.136:51346 - "GET /styles/index.css HTTP/1.1" 304
+2025-12-15 17:41:13,456 - uvicorn.access - INFO - 192.168.1.136:51347 - "GET /js/storage.js HTTP/1.1" 304
+2025-12-15 17:41:13,659 - uvicorn.access - INFO - 192.168.1.136:63234 - "GET /favicon.ico HTTP/1.1" 200
+2025-12-15 17:56:19,755 - uvicorn.error - INFO - Shutting down
+2025-12-15 17:56:19,858 - uvicorn.error - INFO - Waiting for application shutdown.
+2025-12-15 17:56:19,858 - uvicorn.error - INFO - Application shutdown complete.
+2025-12-15 17:56:19,858 - uvicorn.error - INFO - Finished server process [15380]

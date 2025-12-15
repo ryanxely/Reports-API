@@ -1,1 +1,13 @@
-{}
+{
+    "4F868EE92AD771F95E81223D813614001419F1A8D9577954": {
+        "credentials": {
+            "login_param": "username",
+            "value": "rx"
+        },
+        "user_id": 1,
+        "code": "44277",
+        "approved": true,
+        "start_time": "15-12-2025 17:11:43",
+        "api_key": "4F868EE92AD771F95E81223D813614001419F1A8D9577954"
+    }
+}
