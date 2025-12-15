@@ -45,6 +45,7 @@ class UserIn(BaseModel):
     role: str
     phone: str
     email: str
+    profile_image: Optional[Dict[str, str]]
 
     @validator('fullname', pre=True, always=True)
     def set_fullname_default(cls, v, values):
@@ -73,9 +74,14 @@ class FileOut(BaseModel):
     name: str # filename
     type: str # content_type
 
+class ExtraField(BaseModel):
+    key: str
+    value: str
+
 class ReportContent(BaseModel):
     text: Optional[str] = Form("")
     files: Optional[List[FileOut]] = None
+    extra_fields: Optional[List[ExtraField]] = None
 
 class Report(BaseModel):
     id: int
@@ -99,13 +105,19 @@ class UserReports(BaseModel):
 class ReportIn(BaseModel):
     title: str = Form(...)
     text: Optional[str] = Form("")
+    extra_fields: Optional[str] = Form("")  # JSON string of extra fields
 
 class ReportEdit(ReportIn):
     id: int = Form(...)
     title: Optional[str] = Form("")
     text: Optional[str] = Form("")
+    extra_fields: Optional[str] = Form("")
     files_to_delete: Optional[List[int]] = Form(None)
 
 class ReportsListResponse(BaseModel):
     ok: bool
     reports: Dict[str, UserReports]
+
+class ReportResponse(BaseModel):
+    ok: bool
+    report: Report

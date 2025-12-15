@@ -1,13 +1,1 @@
-{
-    "3A281F7F78DBAE2BD4B1ACB70338D3713F58A1A8DCBA22F3": {
-        "credentials": {
-            "login_param": "username",
-            "value": "ryan"
-        },
-        "user_id": 1,
-        "code": "82076",
-        "approved": true,
-        "start_time": "12-12-2025 08:40:28",
-        "api_key": "3A281F7F78DBAE2BD4B1ACB70338D3713F58A1A8DCBA22F3"
-    }
-}
+{}

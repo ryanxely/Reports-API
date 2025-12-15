@@ -155,10 +155,10 @@ function clearPendingLogin() {
  * Get API key from localStorage with fallback candidates
  */
 function getApiKey(type = 'reports') {
-    const candidates = type === 'verify' 
+    const candidates = type === 'verify'
         ? ['miniapp_verify_api_key', 'miniapp_api_key', 'miniapp_key']
         : ['miniapp_reports_api_key', 'miniapp_verify_api_key', 'miniapp_api_key', 'miniapp_key'];
-    
+
     for (const key of candidates) {
         const value = getStoredValue(key);
         if (value && value.length > 0) return value;
@@ -170,8 +170,8 @@ function getApiKey(type = 'reports') {
  * Set API key in localStorage
  */
 function setApiKey(key, type = 'reports') {
-    const storageKey = type === 'verify' 
-        ? STORAGE_KEYS.VERIFY_API_KEY 
+    const storageKey = type === 'verify'
+        ? STORAGE_KEYS.VERIFY_API_KEY
         : STORAGE_KEYS.REPORTS_API_KEY;
     return setStoredValue(storageKey, key);
 }
@@ -204,10 +204,25 @@ function clearDraftData() {
 /**
  * Logout user: clear all auth-related storage
  */
-function logout() {
+async function logout() {
+    
     clearStoredValues(
         STORAGE_KEYS.AUTH_TOKEN,
         STORAGE_KEYS.USER_PROFILE,
         STORAGE_KEYS.PENDING_LOGIN
     );
+    const res = await fetch(CONFIG.AUTH_LOGOUT, {
+        method: 'GET',
+        headers: {
+            'accept': 'application/json',
+            'x-api-key': STORAGE_KEYS.REPORTS_API_KEY
+        }
+    });
+
+    console.log('Logout response:', res);
+    const data = await res.text();
+
+    if (!res.ok || !data || data.ok !== true) {
+        console.error(data?.message);
+    }
 }

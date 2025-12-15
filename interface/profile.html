@@ -9,7 +9,9 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
 
     <link href="https://fonts.googleapis.com/css2?family=Chokokutai&display=swap" rel="stylesheet">
 
@@ -49,8 +51,8 @@
         // Auth check
         requireAuth();
 
-        const tg = window.Telegram.WebApp;
-        tg.expand();
+        const tg = window.Telegram?.WebApp;
+        tg?.expand();
 
         const statusMessage = document.getElementById('statusMessage');
         const profileContent = document.getElementById('profileContent');
@@ -68,7 +70,7 @@
         }
 
         // ===== Logout =====
-        window.handleLogout = function() {
+        window.handleLogout = function () {
             logout();
             window.location.href = 'login.html';
         };
@@ -88,7 +90,7 @@
                     return;
                 }
 
-                if (userProfile.role === "Administrator"){
+                if (userProfile.role === "Administrator") {
                     document.querySelector("#view-reports-link").textContent = "Voir les Rapports Soumis"
                 }
 
@@ -99,19 +101,43 @@
                 console.error('Error loading profile:', error);
                 displayStatus('Erreur lors du chargement du profil : ' + error.message, true);
             }
+
+            attachFilePreviews(".profile-avatar-section");
         }
 
         // ===== Render Profile Form =====
         function renderProfileForm() {
+            let html = `
+                <div class="profile-avatar-section">`
+
             const user = currentProfileData;
             const roleDisplay = user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'User';
 
-            let html = `
-                <div class="profile-avatar-section">
-                    <img id="avatarPreview" class="profile-avatar ${user.profile_img ? 'has-image' : ''}" 
-                         src="${user.profile_img || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Ctext x=%2212%22 y=%2216%22 text-anchor=%22middle%22 font-size=%2220%22%3E👤%3C/text%3E%3C/svg%3E'}" 
-                         alt="Profile Picture">
-                    <div class="avatar-upload" style="display: none">
+            if (user.profile_image) {
+                // Normalize stored path to subpath used by files endpoint (remove leading 'f-iles\\' or 'files/')
+                const rawPath = user.profile_image.path || user.profile_image.name || '';
+                const subpath = (rawPath || '').replace(/^database\/files[\\/]/i, '').replace(/\\/g, '/');
+                const isImage = /\.(png|jpg|jpeg|gif|webp|bmp|svg)$/i.test(user.profile_image.name || '');
+
+                // Escape single quotes for use in onclick attribute
+                const escapedSubpath = subpath.replace(/'/g, "\\'");
+                const escapedName = (user.profile_image.name || '').replace(/'/g, "\\'");
+                const escapedType = (user.profile_image.type || '').replace(/'/g, "\\'");
+                if (isImage) {
+                    html += `<img id="avatarPreview" class="profile-avatar has-image" 
+                        data-filepath="${subpath}" 
+                        alt="Profile Picture">`;
+                } else {
+                    html += `<button style="padding:8px 12px;border-radius:10px;background:var(--bg-white);border:1px solid var(--border-light);color:var(--text-primary);text-decoration:none;font-weight:600;font-size:13px;box-shadow:var(--shadow-sm);transition:all 0.3s ease;cursor:pointer;" onclick="openFilePreview('${escapedSubpath}', '${escapedName}', '${escapedType}')">${user.profile_image.name}</button>`;
+                }
+            } else {
+                html += `<img id="avatarPreview" class="profile-avatar" 
+                        src="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Ctext x=%2212%22 y=%2216%22 text-anchor=%22middle%22 font-size=%2220%22%3E👤%3C/text%3E%3C/svg%3E" 
+                        alt="Profile Picture">`
+            }
+
+            html += `
+                    <div class="avatar-upload">
                         <input type="file" id="profileImgInput" accept="image/*">
                         <button class="avatar-upload-btn" onclick="document.getElementById('profileImgInput').click()">
                             📷 Changer l'avatar
@@ -131,7 +157,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="email">Email (lecture seule)</label>
+                        <label for="email">Email</label>
                         <input type="email" id="email" value="${user.email || ''}" readonly>
                     </div>
 
@@ -147,7 +173,6 @@
 
                     <div class="form-actions">
                         <button type="submit" class="btn btn-save">💾 Enregistrer</button>
-                        <button type="button" class="btn btn-cancel" onclick="window.location.href='index.html'">Annuler</button>
                     </div>
                 </form>
             `;
@@ -168,7 +193,7 @@
             if (!file) return;
 
             const reader = new FileReader();
-            reader.onload = function(evt) {
+            reader.onload = function (evt) {
                 const dataUrl = evt.target.result;
                 profileImagePreview = dataUrl;
                 document.getElementById('avatarPreview').src = dataUrl;
@@ -200,12 +225,14 @@
                 // If user selected a new profile image, include it
                 if (profileImagePreview) {
                     const blob = dataURLToBlob(profileImagePreview);
-                    formData.append('profile_img', blob, 'profile.png');
+                    formData.append('profile_image', blob, 'profile.png');
                 }
 
+                const apiKey = getApiKey('reports');
                 const authToken = getAuthToken();
                 const headers = {
-                    'accept': 'application/json'
+                    'accept': 'application/json',
+                    'x-api-key': apiKey
                 };
 
                 if (authToken) {

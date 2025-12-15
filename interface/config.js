@@ -10,6 +10,7 @@ const CONFIG = {
     // Auth endpoints
     AUTH_LOGIN: '/auth/login',
     AUTH_VERIFY: '/auth/login/verify',
+    AUTH_LOGOUT: '/auth/logout',
 
     // Report endpoints
     REPORTS_ADD: '/reports/add',

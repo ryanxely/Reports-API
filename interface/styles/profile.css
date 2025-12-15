@@ -322,7 +322,6 @@ body {
     display: flex;
     gap: 12px;
     margin-top: 30px;
-    position: sticky;
     bottom: 10px;
     left: 20px;
     width: 100%;

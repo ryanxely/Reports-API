@@ -3,11 +3,20 @@ from pathlib import Path
 from fastapi import Header, HTTPException, UploadFile
 import secrets, shutil
 
-def load_data(object_category="reports"):
-    data_file = f"database/{object_category}.json"
+def load_data(object_category, user_id=None):
+    """Load data from JSON file. For reports, loads user-specific file if user_id provided."""
+    if object_category == "reports" and user_id is not None:
+        # Load user-specific report file
+        data_file = f"database/reports/{user_id}.json"
+    else:
+        data_file = f"database/{object_category}.json"
+    
     if not Path(data_file).exists():
-        if files := sorted(Path("database").glob(f"{object_category}_*.json"), reverse=True):
-            data_file = str(files[0])
+        if object_category != "reports":
+            if files := sorted(Path("database").glob(f"{object_category}_*.json"), reverse=True):
+                data_file = str(files[0])
+            else:
+                return {}
         else:
             return {}
         
@@ -18,17 +27,18 @@ def load_data(object_category="reports"):
         except json.JSONDecodeError:
             return {}
 
-def save_data(data, object_category="reports"):
+def save_data(data, object_category="reports", user_id=None):
+    """Save data to JSON file. For reports, saves to user-specific file if user_id provided."""
     import json
-    data_file = f"database/{object_category}.json"
+    
+    if object_category == "reports" and user_id is not None:
+        # Save to user-specific report file
+        data_file = f"database/reports/{user_id}.json"
+    else:
+        data_file = f"database/{object_category}.json"
+    
     Path(data_file).parent.mkdir(parents=True, exist_ok=True)
-    if not Path(data_file).exists():
-        if files := sorted(Path("database").glob(f"{object_category}_*.json"), reverse=True):
-            data_file = str(files[0])
-        else:
-            data_file = f"database/{object_category}_{now(d_format='%d%m%Y%H%M%S')}.json"
-            with open(data_file, "w", encoding="utf-8") as f:
-                f.write("{}" if object_category != "reports" else "{}")
+    
     with open(data_file, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 
@@ -49,14 +59,28 @@ async def save_file(f: UploadFile, path: str):
     save_data(config, "config")
     return {"id": new_file_id, "name": f.filename, "type": f.content_type, "path": str(new_path)}
 
+async def save_profile_image(profile_image: UploadFile, user_id: int):    
+    folder = "database/files/users/"
+    ext = profile_image.filename.split(".")[-1]
+    new_path = Path(folder).joinpath(f"{user_id}.{ext}")
+    new_path = new_path.as_posix()
+
+    Path(folder).mkdir(parents=True, exist_ok=True)
+    with open(new_path, "wb") as out_file:
+        out_file.write(await profile_image.read())
+    
+    save_data(config, "config")
+    return {"name": profile_image.filename, "type": profile_image.content_type, "path": str(new_path)}
+
 async def delete_files(files, target_files):
-    new_list = []
+    undeleted_files_list = []
     for f in files:
         if f.get("id") in target_files:
-            Path(f.get("path")).unlink()
+            if Path(f.get("path")).exists():
+                Path(f.get("path")).unlink()
         else:
-            new_list.append(f)
-    return new_list
+            undeleted_files_list.append(f)
+    return undeleted_files_list
 
 async def delete_dir(path):
     if Path(path).exists():
@@ -119,10 +143,11 @@ def now(type: str = "datetime", d_format: str = "%d-%m-%Y %H:%M:%S"):
 from datetime import datetime
 
 def validate_reports():
-    reports = load_data("reports")
-    today = datetime.now().date()
+    user_ids = [int(uid) for uid in load_data("users").keys()]
+    for user_id in user_ids:
+        user_reports = load_data("reports", user_id=user_id)
+        today = datetime.now().date()
 
-    for user_reports in reports.values():
         for day_str, report in user_reports.get("items", {}).items():
 
             try:
@@ -134,7 +159,7 @@ def validate_reports():
                 report["validated"] = True
                 report["validated_by"] = 0
 
-    save_data(reports, "reports")
+        save_data(user_reports, "reports", user_id=user_id)
 
 
     
@@ -151,6 +176,7 @@ def send_verification_code(recipient_email, code):
     smtp_server, port, sender_email, password = config.get("smtp_server"), config.get("tls_port"), config.get("admin_email"), config.get("admin_email_password")
     # Establish connection
     server = smtplib.SMTP(smtp_server, port)
+    # server.connect()
     server.starttls() # Enable encryption
     server.login(sender_email, password)
     # Create email content

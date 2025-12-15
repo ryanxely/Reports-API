@@ -1201,3 +1201,87 @@ input#editTitle:focus {
     color: #009688;
     border-top: 1px solid #e2e8f0;
 }
+
+/* Extra Fields Styles */
+.extra-fields-container {
+    padding: 16px 0;
+}
+
+.extra-fields-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 16px;
+    font-size: 14px;
+}
+
+.extra-fields-table thead {
+    background: #f5f5f5;
+}
+
+.extra-fields-table th {
+    padding: 10px;
+    text-align: left;
+    font-weight: 600;
+    color: #333;
+    border-bottom: 2px solid #ddd;
+}
+
+.extra-fields-table td {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.extra-fields-table input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+    font-family: inherit;
+    transition: border-color 0.2s ease;
+}
+
+.extra-fields-table input:focus {
+    outline: none;
+    border-color: #009688;
+    box-shadow: 0 0 0 3px rgba(0, 150, 136, 0.1);
+}
+
+.extra-fields-table tbody tr:hover {
+    background: #fafafa;
+}
+
+.remove-field-btn {
+    background: #f2d8d8;
+    color: #c53030;
+    border: 1px solid #c53030;
+    padding: 6px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.remove-field-btn:hover {
+    background: #c53030;
+    color: white;
+}
+
+.add-field-btn {
+    background: #e6f7f5;
+    color: #009688;
+    border: 1px solid #009688;
+    padding: 10px 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.add-field-btn:hover {
+    background: #009688;
+    color: white;
+}

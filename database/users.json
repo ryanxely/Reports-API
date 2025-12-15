@@ -5,29 +5,47 @@
         "fullname": "Ryan - Admin",
         "role": "Administrator",
         "phone": "237681803185",
-        "email": "admin@galaxyconseils.com",
-        "api_key": "CFED0DA54E563906A213313E16DA686193E5D3D61EC943AA",
-        "created_at": "20-11-2025 08:23:28"
+        "email": "ryanaxel2020@gmail.com",
+        "api_key": "F899C5685997EAB3C4C96256C650EB586458A7779B6D4132",
+        "created_at": "20-11-2025 08:23:28",
+        "profile_image": {
+            "name": "profile.png",
+            "type": "image/png",
+            "path": "database/files/users/0.png"
+        },
+        "last_edit_at": "13-12-2025 02:11:06"
     },
     "1": {
         "id": 1,
-        "username": "ryan",
+        "username": "rx",
         "fullname": "Ryan",
         "role": "User",
         "phone": "237681803185",
         "email": "ryanxely@gmail.com",
-        "api_key": "3A281F7F78DBAE2BD4B1ACB70338D3713F58A1A8DCBA22F3",
-        "created_at": "24-11-2025 13:57:20"
+        "api_key": "4F868EE92AD771F95E81223D813614001419F1A8D9577954",
+        "created_at": "24-11-2025 13:57:20",
+        "last_edit_at": "15-12-2025 11:45:47",
+        "profile_image": {
+            "name": "profile.png",
+            "type": "image/png",
+            "path": "database/files/users/1.png"
+        }
     },
     "2": {
         "id": 2,
-        "username": "ruben",
+        "username": "neb23x",
         "fullname": "Yebga Ruben",
         "role": "User",
         "phone": "237679845608",
         "email": "yvesnyemb7@gmail.com",
         "api_key": "0E993F8775784787007FA365F4C016B803F47B67C7E703D7",
-        "created_at": "25-11-2025 14:06:52"
+        "created_at": "25-11-2025 14:06:52",
+        "last_edit_at": "15-12-2025 13:01:52",
+        "profile_image": {
+            "name": "profile.png",
+            "type": "image/png",
+            "path": "database/files/users/2.png"
+        }
     },
     "3": {
         "id": 3,

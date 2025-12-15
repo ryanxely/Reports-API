@@ -16,8 +16,10 @@
 
 
     <!-- Quill.js (rich text editor) -->
-    <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
-    <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+    <!-- <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script> -->
+    <link href="styles/quill.snow.css" rel="stylesheet">
+    <script src="js/quill.min.js"></script>
 
     <link rel="stylesheet" href="./styles/utils.css">
     <link rel="stylesheet" href="./styles/view.css">
@@ -102,6 +104,30 @@
 
                 </div>
 
+                <!-- Extra Fields Accordion Section -->
+                <div class="form-row accordion-section form-group">
+                    <div class="accordion-header" onclick="toggleAccordion('edit-extra-fields')">
+                        <label>🔖 Champs personnalisés</label>
+                        <span class="accordion-icon" id="edit-extra-fields-icon" style="transform: rotate(-90deg)">▼</span>
+                    </div>
+                    <div class="accordion-content collapsed" id="edit-extra-fields-content" style="max-height: 0px;">
+                        <div id="editExtraFieldsContainer" class="extra-fields-container">
+                            <table class="extra-fields-table">
+                                <thead>
+                                    <tr>
+                                        <th>Clé</th>
+                                        <th>Valeur</th>
+                                        <th style="width: 60px;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="editExtraFieldsBody">
+                                    <!-- Extra field rows will be added here -->
+                                </tbody>
+                            </table>
+                            <button type="button" class="add-field-btn" onclick="addEditExtraField()">+ Ajouter un champ</button>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Action Buttons -->
                 <div class="form-actions">
@@ -127,6 +153,25 @@
                 <div id="reportFullAttachments" style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap;"></div>
                 <div class="form-actions">
                     <button class="btn btn-secondary" onclick="switchView('list')">Retour</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Single Report View (by URL parameter) -->
+        <div id="singleReportView" class="view">
+            <div class="edit-form">
+                <!-- <h2 style="margin-bottom: 12px; color: #2d3748;">Rapport</h2> -->
+                <div id="singleReportTitle"
+                    style="font-size:20px;font-weight:700;margin-bottom:8px;color:var(--text-primary);"></div>
+                <div id="singleReportMeta" style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;"></div>
+                <div id="singleReportContent"
+                    style="background:var(--bg-light);padding:16px;border-radius:10px;width:100%;margin-bottom:12px;color:var(--text-secondary);">
+                </div>
+                <div id="singleReportAttachments" style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap;"></div>
+                <div id="singleReportExtraFields" style="margin-bottom:12px;"></div>
+                <div class="form-actions">
+                    <button class="btn btn-secondary" onclick="backFromSingleReport()">← Retour</button>
+                    <button class="btn" id="shareReportBtn" style="background:#009688;color:white;" >📤 Partager</button>
                 </div>
             </div>
         </div>
@@ -174,8 +219,8 @@
         const USERS_API_URL = getApiUrl(CONFIG.USERS_GET);
 
         // ===== Telegram WebApp =====
-        const tg = window.Telegram.WebApp;
-        tg.expand();
+        const tg = window.Telegram?.WebApp;
+        tg?.expand();
 
         // ===== State Management =====
         let currentView = 'list';
@@ -196,6 +241,8 @@
         const userInfo = document.getElementById('userInfo');
         const fileInput = document.getElementById('editFileInput');
         const previewEl = document.getElementById('preview');
+        const singleReportView = document.getElementById('singleReportView');
+
 
         // ===== Initialize Quill for Edit View =====
         function initEditQuill() {
@@ -438,10 +485,10 @@
                         html += `
                             <div class="report-card">
                                 <div class="report-title">${report.title}</div>
-                                <div class="report-meta">🕐 Cree a  ${report.created_at} ${report.last_edit_at && "- Modifie a"} ${report.last_edit_at} • ID: ${report.id}</div>
-                                <div class="report-content">${contentPreview}${cleanText.length > 100 ? '...' : ''}</div>
+                                <div class="report-meta">🕐 Crée le ${report.created_at} ${report.last_edit_at && "• Modifié le "} ${report.last_edit_at} • ID: ${report.id}</div>
+                                <div class="report-content" style="cursor:pointer;" onclick="viewReportDetail(${report.id})">${contentPreview}${cleanText.length > 100 ? '...' : ''}</div>
                                 ${filesHtml}
-                                ${dayData.validated ? `<div class="report-validated">Se Rapport a deja ete validé</div>` : `<div class="report-actions"><button class="btn btn-edit" onclick="editReport(${report.id}, '${day}')">✏️ Modifier</button> <button class="btn btn-delete" onclick="deleteReport(${report.id})">🗑️ Supprimer</button></div>`}
+                                ${dayData.validated ? `<div class="report-validated">Se Rapport a deja ete validé</div>` : `<div class="report-actions"><button class="btn btn-edit" onclick="viewReportDetail(${report.id})">👁️ Voir</button> <button class="btn btn-edit" onclick="editReport(${report.id}, '${day}')">✏️ Modifier</button> <button class="btn btn-delete" onclick="deleteReport(${report.id})">🗑️ Supprimer</button> <button class="btn" onclick="shareReport(${report.id})" style="background:#52c41a;color:white;">📤 Partager</button></div>`}
                             </div>
                         `;
                     });
@@ -482,7 +529,7 @@
                     let fullname = userProfile.fullname || username
                     const avatarHtml = `<div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; margin-right: 12px; font-size: 14px;">${fullname.charAt(0).toUpperCase()}</div>`;
 
-                    html += `<div style="background: rgba(102, 126, 234, 0.1); padding: 16px; margin-bottom: 16px; border-radius: 12px; border-left: 4px solid #667eea;">
+                    html += `<div style="background: rgba(102, 126, 234, 0.1); padding: 16px; margin-bottom: 16px; border-radius: 12px; border-left: 4px solid #009688;">
                 <div style="display: flex; align-items: center; margin-bottom: 12px;">
                     ${avatarHtml}
                     <div>
@@ -522,7 +569,7 @@
                                     filesHtml += '<div class="report-files" style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">';
                                     files.forEach(f => {
                                         const rawPath = f.path || f.name || '';
-                                        const subpath = (rawPath || '').replace(/^files[\\/]/i, '').replace(/\\/g, '/');
+                                        const subpath = (rawPath || '').replace(/^database\/files[\\/]/i, '').replace(/\\/g, '/');
                                         const isImage = /\.(png|jpg|jpeg|gif|webp|bmp|svg)$/i.test(f.name || '');
 
                                         // Escape single quotes for use in onclick attribute
@@ -590,6 +637,8 @@
                 editQuill.root.innerHTML = report.content?.text || '';
                 // Populate existing files UI and reset file input
                 populateExistingFiles(report);
+                // Populate extra fields if present
+                populateEditExtraFields(report);
                 if (fileInput) fileInput.value = null;
                 switchView('edit');
             } else {
@@ -663,6 +712,78 @@
             attachFilePreviews(container);
         }
 
+        // Populate extra fields into the edit form
+        function populateEditExtraFields(report) {
+            const tbody = document.getElementById('editExtraFieldsBody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            const extraFields = report.content?.extra_fields || [];
+            let fieldCount = 0;
+            
+            extraFields.forEach(field => {
+                const rowId = `edit-field-${fieldCount++}`;
+                const row = document.createElement('tr');
+                row.id = rowId;
+                row.innerHTML = `
+                    <td><input type="text" class="extra-field-key" placeholder="ex: Priorité" value="${field.key || ''}" /></td>
+                    <td><input type="text" class="extra-field-value" placeholder="ex: Haute" value="${field.value || ''}" /></td>
+                    <td><button type="button" class="remove-field-btn" onclick="removeEditExtraField('${rowId}')">Supprimer</button></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        let editExtraFieldCount = 0;
+
+        function addEditExtraField(key = '', value = '') {
+            const tbody = document.getElementById('editExtraFieldsBody');
+            const rowId = `edit-field-${editExtraFieldCount++}`;
+            
+            const row = document.createElement('tr');
+            row.id = rowId;
+            row.innerHTML = `
+                <td><input type="text" class="extra-field-key" placeholder="ex: Priorité" value="${key}" /></td>
+                <td><input type="text" class="extra-field-value" placeholder="ex: Haute" value="${value}" /></td>
+                <td><button type="button" class="remove-field-btn" onclick="removeEditExtraField('${rowId}')">Supprimer</button></td>
+            `;
+            
+            tbody.appendChild(row);
+
+            toggleAccordion('edit-extra-fields', 'unfold')
+        }
+
+        function removeEditExtraField(rowId) {
+            const row = document.getElementById(rowId);
+            if (row) {
+                row.remove();
+            }
+
+            toggleAccordion('edit-extra-fields', 'unfold')
+        }
+
+        function getEditExtraFields() {
+            const rows = document.querySelectorAll('#editExtraFieldsBody tr');
+            const fields = [];
+            
+            rows.forEach(row => {
+                const keyInput = row.querySelector('.extra-field-key');
+                const valueInput = row.querySelector('.extra-field-value');
+                
+                if (keyInput && valueInput) {
+                    const key = keyInput.value.trim();
+                    const value = valueInput.value.trim();
+                    
+                    // Only add non-empty fields
+                    if (key || value) {
+                        fields.push({ key, value });
+                    }
+                }
+            });
+            
+            return fields;
+        }
+
 
         // ===== Accordion Toggle Function =====
         function toggleAccordion(sectionId, strict_action = "") {
@@ -705,10 +826,10 @@
             const content = editQuill.root.innerHTML;
             // const date = document.getElementById('editDate').value;
 
-            if (!title) {
-                displayStatus('Veuillez saisir un titre', true);
-                return;
-            }
+            // if (!title) {
+            //     displayStatus('Veuillez saisir un titre', true);
+            //     return;
+            // }
 
             const apiKey = getApiKey('reports');
             if (!apiKey) {
@@ -738,6 +859,11 @@
                 form.append('title', title);
                 // Append text content using 'text' to match upload form style
                 form.append('text', content);
+                // Add extra_fields as JSON string
+                const editExtraFields = getEditExtraFields();
+                if (editExtraFields.length > 0) {
+                    form.append('extra_fields', JSON.stringify(editExtraFields));
+                }
                 // Send files_to_delete as JSON array of IDs
 
                 if (filesToDelete.length != 0) {
@@ -898,7 +1024,7 @@
 
         // ===== Show User Info =====
         const userProfile = getUserProfile();
-        displayUserInfo(userInfo, userProfile, tg.initDataUnsafe?.user);
+        displayUserInfo(userInfo, userProfile, tg?.initDataUnsafe?.user);
         if (userProfile.role === "Administrator") {
             document.querySelector("#pageTitle").innerHTML = "Rapports Soumis"
             fetchUsers();
@@ -1124,6 +1250,264 @@
                 closeFilePreview();
             }
         });
+
+        // ===== Single Report View Functions =====
+        
+        /**
+         * View report detail by ID (from URL parameter or button click)
+         */
+        async function viewReportDetail(reportId) {
+            try {
+                const apiKey = getApiKey('reports');
+                if (!apiKey) {
+                    displayStatus('Clé API manquante', true);
+                    return;
+                }
+
+                const headers = {
+                    'accept': 'application/json',
+                    'x-api-key': apiKey
+                };
+
+                // Fetch single report from API
+                const response = await fetch(`/api/reports/single?id=${reportId}`, {
+                    method: 'GET',
+                    headers: headers
+                });
+
+                if (!response.ok) {
+                    displayStatus('Rapport introuvable', true);
+                    return;
+                }
+
+                const data = await response.json();
+                if (!data.ok || !data.report) {
+                    displayStatus('Erreur lors du chargement du rapport', true);
+                    return;
+                }
+
+                const report = data.report;
+                displaySingleReport(report);
+                switchView('singleReport');
+            } catch (error) {
+                console.error('Error fetching single report:', error);
+                displayStatus('Erreur lors du chargement du rapport', true);
+            }
+        }
+
+        /**
+         * Display single report in the dedicated view
+         */
+        function displaySingleReport(report) {
+            const titleEl = document.getElementById('singleReportTitle');
+            const metaEl = document.getElementById('singleReportMeta');
+            const contentEl = document.getElementById('singleReportContent');
+            const attachmentsEl = document.getElementById('singleReportAttachments');
+            const extraFieldsEl = document.getElementById('singleReportExtraFields');
+            const shareReportBtn = document.getElementById('shareReportBtn');
+
+            // Set title and meta
+            titleEl.textContent = report.title || 'Sans titre';
+            metaEl.textContent = `🕐 Créé le ${report.created_at}${report.last_edit_at ? ` • Modifié le ${report.last_edit_at}` : ''} • ID: ${report.id} • Date: ${report.day}`;
+
+            // Set content
+            contentEl.innerHTML = report.content?.text || '<div style="color:#718096">(Pas de contenu)</div>';
+
+            // Display attachments
+            attachmentsEl.innerHTML = '';
+            const files = report.content?.files || [];
+            if (files.length > 0) {
+                const filesTitle = document.createElement('div');
+                filesTitle.style.fontWeight = '600';
+                filesTitle.style.marginBottom = '8px';
+                filesTitle.style.color = 'var(--text-primary)';
+                filesTitle.textContent = '📎 Pièces jointes:';
+                filesTitle.style.flexBasis = '100%';
+                attachmentsEl.appendChild(filesTitle);
+
+                files.forEach(f => {
+                    const rawPath = f.path || f.name || '';
+                    const subpath = (rawPath || '').replace(/^database\/files[\\/]/i, '').replace(/\\/g, '/');
+                    const isImage = /\.(png|jpg|jpeg|gif|webp|bmp|svg)$/i.test(f.name || '');
+
+                    if (isImage) {
+                        const img = document.createElement('img');
+                        img.setAttribute("data-filepath", `${subpath}`);
+                        img.alt = f.name;
+                        img.style.width = '80px';
+                        img.style.height = '80px';
+                        img.style.objectFit = 'cover';
+                        img.style.borderRadius = '6px';
+                        img.style.background = '#f0f0f0';
+                        img.style.cursor = 'pointer';
+                        img.onclick = () => openFilePreview(subpath, f.name, f.type);
+                        attachmentsEl.appendChild(img);
+                    } else {
+                        const btn = document.createElement('button');
+                        btn.textContent = f.name;
+                        btn.style.padding = '8px 12px';
+                        btn.style.borderRadius = '10px';
+                        btn.style.background = 'var(--bg-white)';
+                        btn.style.border = '1px solid var(--border-light)';
+                        btn.style.color = 'var(--text-primary)';
+                        btn.style.fontWeight = '600';
+                        btn.style.fontSize = '13px';
+                        btn.style.cursor = 'pointer';
+                        btn.onclick = () => openFilePreview(subpath, f.name, f.type);
+                        attachmentsEl.appendChild(btn);
+                    }
+                });
+            }
+
+            // Display extra fields if present
+            extraFieldsEl.innerHTML = '';
+            const extraFields = report.content?.extra_fields || [];
+            if (extraFields.length > 0) {
+                const extraTitle = document.createElement('div');
+                extraTitle.style.fontWeight = '600';
+                extraTitle.style.marginBottom = '8px';
+                extraTitle.style.color = 'var(--text-primary)';
+                extraTitle.textContent = '📋 Champs supplémentaires:';
+                extraFieldsEl.appendChild(extraTitle);
+
+                const fieldsContainer = document.createElement('div');
+                fieldsContainer.style.display = 'grid';
+                fieldsContainer.style.gridTemplateColumns = 'repeat(auto-fit, minmax(200px, 1fr))';
+                fieldsContainer.style.gap = '12px';
+
+                extraFields.forEach(field => {
+                    const fieldDiv = document.createElement('div');
+                    fieldDiv.style.background = 'var(--bg-light)';
+                    fieldDiv.style.padding = '12px';
+                    fieldDiv.style.borderRadius = '8px';
+                    fieldDiv.style.borderLeft = '4px solid #1890ff';
+
+                    const keyEl = document.createElement('div');
+                    keyEl.style.fontWeight = '600';
+                    keyEl.style.color = '#1890ff';
+                    keyEl.style.fontSize = '12px';
+                    keyEl.style.marginBottom = '4px';
+                    keyEl.textContent = field.key;
+
+                    const valueEl = document.createElement('div');
+                    valueEl.style.color = 'var(--text-primary)';
+                    valueEl.style.wordBreak = 'break-word';
+                    valueEl.textContent = field.value;
+
+                    fieldDiv.appendChild(keyEl);
+                    fieldDiv.appendChild(valueEl);
+                    fieldsContainer.appendChild(fieldDiv);
+                });
+
+                extraFieldsEl.appendChild(fieldsContainer);
+            }
+
+            // Setup share button
+            shareReportBtn.onclick = () => shareReport(report.id);
+
+            // Store current report ID for sharing
+            window.currentReportId = report.id;
+            attachFilePreviews(singleReportView);
+        }
+
+        /**
+         * Share report by copying link to clipboard
+         */
+        function shareReport(reportId) {
+            const shareUrl = `${window.location.origin}${window.location.pathname}?reportId=${reportId}`;
+            
+            // Copy to clipboard
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                displayStatus('Lien copié dans le presse-papiers! 📋', false);
+            }).catch(() => {
+                // Fallback for older browsers
+                const textarea = document.createElement('textarea');
+                textarea.value = shareUrl;
+                document.body.appendChild(textarea);
+                textarea.select();
+                try {
+                    document.execCommand('copy');
+                    displayStatus('Lien copié dans le presse-papiers! 📋', false);
+                } catch (err) {
+                    displayStatus('Erreur lors de la copie du lien', true);
+                }
+                document.body.removeChild(textarea);
+            });
+        }
+
+        /**
+         * Go back from single report view
+         */
+        function backFromSingleReport() {
+            switchView('list');
+        }
+
+        /**
+         * Updated switchView to handle singleReport view
+         */
+        const originalSwitchView = window.switchView;
+        window.switchView = function(view) {
+            const singleReportView = document.getElementById('singleReportView');
+            
+            if (view === 'list') {
+                listView.classList.add('active');
+                editView.classList.remove('active');
+                if (viewReportView) viewReportView.classList.remove('active');
+                if (singleReportView) singleReportView.classList.remove('active');
+                btnListView.classList.add('active');
+                if (btnViewReport) btnViewReport.classList.remove('active');
+                btnEditView.classList.remove('active');
+                btnEditView.style.display = 'none';
+            } else if (view === 'edit') {
+                listView.classList.remove('active');
+                editView.classList.add('active');
+                if (viewReportView) viewReportView.classList.remove('active');
+                if (singleReportView) singleReportView.classList.remove('active');
+                btnListView.classList.remove('active');
+                if (btnViewReport) btnViewReport.classList.remove('active');
+                btnEditView.classList.add('active');
+                btnEditView.style.display = 'block';
+                initEditQuill();
+            } else if (view === 'visual') {
+                listView.classList.remove('active');
+                editView.classList.remove('active');
+                if (viewReportView) viewReportView.classList.add('active');
+                if (singleReportView) singleReportView.classList.remove('active');
+                btnListView.classList.remove('active');
+                if (btnViewReport) btnViewReport.classList.add('active');
+                btnEditView.classList.remove('active');
+                btnEditView.style.display = 'none';
+            } else if (view === 'singleReport') {
+                listView.classList.remove('active');
+                editView.classList.remove('active');
+                if (viewReportView) viewReportView.classList.remove('active');
+                if (singleReportView) singleReportView.classList.add('active');
+                btnListView.classList.remove('active');
+                if (btnViewReport) btnViewReport.classList.remove('active');
+                btnEditView.classList.remove('active');
+                btnEditView.style.display = 'none';
+            }
+        };
+
+        /**
+         * Check for report ID in URL parameters on page load
+         */
+        function checkUrlParams() {
+            const params = new URLSearchParams(window.location.search);
+            const reportId = params.get('reportId');
+            
+            if (reportId) {
+                // Load and display the report
+                viewReportDetail(parseInt(reportId));
+            }
+        }
+
+        // Check URL parameters when page loads
+        window.addEventListener('load', checkUrlParams);
+        // Also check immediately in case page is already loaded
+        if (document.readyState === 'complete') {
+            checkUrlParams();
+        }
     </script>
 </body>
 

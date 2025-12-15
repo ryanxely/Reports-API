@@ -30,7 +30,7 @@ async def login(credentials: Credentials):
     session = {"credentials": credentials, "user_id": user.get("id"), "code": generate_verification_code(), "approved": False, "start_time": "", "api_key": user.get("api_key")} 
     sessions[user.get("api_key")] = session
     save_data(sessions, "sessions")
-    # send_verification_code(user.get("email"), session.get("code"))
+    send_verification_code(user.get("email"), session.get("code"))
     return {"ok": True, "api_key": user.get("api_key"), "message": "We sent you a verification code on your email address", "email": user.get("email")}
 
 
@@ -52,7 +52,7 @@ async def verify_login(code: str, session: dict = Depends(verify_authentication)
         save_data(sessions, "sessions")
         return {"ok": True, "message": "Successfully Authenticated"}
     
-@router.post("/auth/logout")
+@router.get("/auth/logout")
 def logout(session: dict = Depends(verify_authentication)):
     sessions = load_data("sessions")
     session_info = sessions.pop(session.get("api_key"))
@@ -83,19 +83,19 @@ async def add_user(user_in: UserIn, authorized: bool = Depends(only_admin)):
 
     return {"ok": True, "message": "User added successfully", "user": new_user}
 
-@router.get("/users", response_model=UsersListResponse)
+@router.get("/users")
 def get_users(authorized: bool = Depends(only_admin)):
     users = load_data("users")
     return {"ok": True, "users": users}
 
-@router.get("/profile", response_model=UserProfileResponse)
+@router.get("/profile", response_model=dict)
 def get_user_profile(session: dict = Depends(verify_authentication_approval)):
     users = load_data("users")
     user_profile = users.get(str(session.get("user_id")))
     return {"ok": True, "user": user_profile}
 
 @router.patch("/profile/edit")
-async def edit_profile(username: Optional[str] = Form(""), fullname: Optional[str] = Form(""), phone: Optional[str] = Form(""), session: dict = Depends(verify_authentication_approval)):
+async def edit_profile(username: Optional[str] = Form(""), fullname: Optional[str] = Form(""), phone: Optional[str] = Form(""), profile_image: UploadFile = File(None), session: dict = Depends(verify_authentication_approval)):
     """Edit user profile information"""
     users = load_data("users")
     user_id = str(session.get("user_id"))
@@ -116,6 +116,9 @@ async def edit_profile(username: Optional[str] = Form(""), fullname: Optional[st
     
     if phone:
         user["phone"] = phone
+
+    if profile_image:
+        user["profile_image"] = await save_profile_image(profile_image, user_id)
     
     user["last_edit_at"] = now()
     users[user_id] = user
@@ -151,16 +154,17 @@ async def add_post(text: str = Form(""), files: List[UploadFile] = File([])):
 
 
 @router.post("/reports/add")
-async def add_report(title: str = Form(...), text: Optional[str] = Form(""), date: str = Form(""), files: Optional[List[UploadFile]] = File([]), session: dict = Depends(verify_authentication_approval)):
+async def add_report(title: str = Form(...), text: Optional[str] = Form(""), date: str = Form(""), extra_fields: Optional[str] = Form(""), files: Optional[List[UploadFile]] = File([]), session: dict = Depends(verify_authentication_approval)):
     print("\n>> Adding report...\n>> Received data:", title, text, files, sep=" - ")
     config = load_data("config")
     new_record_id = config.get("last_record_id")+1
     config["last_record_id"] = new_record_id
     save_data(config, "config")
     
-    reports = load_data("reports")
-
     user_id = session.get("user_id")
+    
+    # Load user's reports
+    reports = load_data("reports", user_id)
 
     try:
         current_day = datetime.strptime(date, "%d-%m-%Y").strftime("%d-%m-%Y")
@@ -170,45 +174,114 @@ async def add_report(title: str = Form(...), text: Optional[str] = Form(""), dat
         except Exception:
             current_day = now("date")
     
-    user_reports = reports.get(str(user_id), {"items": {}, "user_id": user_id})
+    # Initialize user reports structure if empty
+    if not reports:
+        reports = {"items": {}, "user_id": user_id}
     
-    day_report = user_reports.get("items").get(current_day, {"records": [], "day": current_day, "validated": False, "validated_by": -1})
+    day_report = reports.get("items", {}).get(current_day, {"records": [], "day": current_day, "validated": False, "validated_by": -1})
     
     files_info = []
     for f in files:
         filename = f.filename
         files_info.append(await save_file(f, f"database/files/reports/{new_record_id}/{filename}"))
 
-    report_content = {"text": text, "files": files_info}
+    # Parse extra_fields from JSON string
+    parsed_extra_fields = []
+    if extra_fields:
+        try:
+            import json
+            extra_data = json.loads(extra_fields)
+            if isinstance(extra_data, list):
+                parsed_extra_fields = extra_data
+            elif isinstance(extra_data, dict):
+                parsed_extra_fields = [{"key": k, "value": v} for k, v in extra_data.items()]
+        except json.JSONDecodeError:
+            pass
+
+    report_content = {"text": text, "files": files_info, "extra_fields": parsed_extra_fields}
     new_report = {"id": new_record_id, "title": title, "content": report_content, "user_id": user_id, "day": current_day, "created_at": now("time"), "last_edit_at": ""}
     day_report["records"].append(new_report)
-    user_reports["items"][current_day] = day_report
-    reports[str(user_id)] = user_reports
-
-    save_data(reports, "reports")
+    reports["items"][current_day] = day_report
+    
+    # Save to user-specific file
+    save_data(reports, "reports", user_id)
     return {"ok": True, "message": "Report added successfully", "report": new_report}
 
 @router.get("/reports")
 def get_reports(session: dict = Depends(verify_authentication_approval)):
     validate_reports()
-    reports = load_data("reports")
-    if is_admin(session.get("api_key")):  
-        return {"ok": True, "reports": reports}
     user_id = session.get("user_id")
-    return {"ok": True, "reports": reports.get(str(user_id), {})}
+    api_key = session.get("api_key")
+    
+    if is_admin(api_key):
+        # Admins get all reports from all users
+        from pathlib import Path
+        all_reports = {}
+        reports_dir = Path("database/reports")
+        
+        # Iterate through all user report files
+        if reports_dir.exists():
+            for report_file in reports_dir.glob("*.json"):
+                try:
+                    user_file_id = report_file.stem
+                    user_reports = load_data("reports", user_file_id)
+                    if user_reports:
+                        all_reports[user_file_id] = user_reports
+                except Exception:
+                    pass
+        
+        return {"ok": True, "reports": all_reports}
+    
+    # Regular users only get their own reports
+    user_reports = load_data("reports", user_id)
+    return {"ok": True, "reports": user_reports if user_reports else {}}
+
+@router.get("/reports/single", response_model=ReportResponse)
+def get_single_report(id: int, session: dict = Depends(verify_authentication_approval)):
+    """Get a single report by ID."""
+    validate_reports()
+    user_id = session.get("user_id")
+    api_key = session.get("api_key")
+    
+    # Admins can view any report
+    if is_admin(api_key):
+        # Search through all user report files
+        from pathlib import Path
+        reports_dir = Path("database/reports")
+        
+        if reports_dir.exists():
+            for report_file in reports_dir.glob("*.json"):
+                try:
+                    user_file_id = report_file.stem
+                    user_reports = load_data("reports", user_file_id)
+                    for day_report in user_reports.get("items", {}).values():
+                        for record in day_report.get("records", []):
+                            if record.get("id") == id:
+                                return {"ok": True, "report": record}
+                except Exception:
+                    pass
+    else:
+        # Regular users can only view their own reports
+        user_reports = load_data("reports", user_id)
+        for day_report in user_reports.get("items", {}).values():
+            for record in day_report.get("records", []):
+                if record.get("id") == id:
+                    return {"ok": True, "report": record}
+    
+    raise HTTPException(status_code=404, detail="Report not found")
 
 @router.patch("/reports/edit")
-async def edit_report(id: int = Form(...), date: str = Form(...), title: Optional[str] = Form(""), text: Optional[str] = Form(""), files_to_delete: Optional[List[int]] = None, files: Optional[List[UploadFile]] = File([]), session: dict = Depends(verify_authentication_approval)):
+async def edit_report(id: int = Form(...), date: str = Form(...), title: Optional[str] = Form(""), text: Optional[str] = Form(""), extra_fields: Optional[str] = Form(""), files_to_delete: Optional[List[int]] = None, files: Optional[List[UploadFile]] = File([]), session: dict = Depends(verify_authentication_approval)):
     print("\n>> Editing report...\n>> Received data:", id, title, text, files, sep=" - ")
     if files_to_delete is None:
         files_to_delete = []
-    reports = load_data("reports")
     user_id = session.get("user_id")
+    reports = load_data("reports", user_id)
 
-    user_reports = reports.get(str(user_id), {})
-    if not user_reports:
+    if not reports:
         return {"ok": True, "message": "You have no reports"}
 
+    user_reports = reports
     target_report = user_reports.get("items").get(date, {})
     if not target_report:
         return {"ok": False, "message": f"You sent no reports on the {date}"}
@@ -227,49 +300,62 @@ async def edit_report(id: int = Form(...), date: str = Form(...), title: Optiona
 
     for f in files:
         filename = f.filename
-        new_files_info.append(await save_file(f, f"files/reports/{id}/{filename}"))
+        new_files_info.append(await save_file(f, f"database/files/reports/{id}/{filename}"))
+
+    # Parse extra_fields from JSON string if provided
+    parsed_extra_fields = records[record_index]["content"].get("extra_fields", [])
+    if extra_fields:
+        try:
+            import json
+            extra_data = json.loads(extra_fields)
+            if isinstance(extra_data, list):
+                parsed_extra_fields = extra_data
+            elif isinstance(extra_data, dict):
+                parsed_extra_fields = [{"key": k, "value": v} for k, v in extra_data.items()]
+        except json.JSONDecodeError:
+            pass
 
     target_report["records"][record_index]["title"] = title or records[record_index]["title"]
     target_report["records"][record_index]["last_edit_at"] = now("time")
     target_report["records"][record_index]["content"]["text"] = text or records[record_index]["content"]["text"]
     target_report["records"][record_index]["content"]["files"] = new_files_info
+    target_report["records"][record_index]["content"]["extra_fields"] = parsed_extra_fields
 
     user_reports["items"][date].update(target_report)
-    reports[str(user_id)].update(user_reports)
 
-    print("===============After edit, Reports Content===============", reports)
+    print("===============After edit, Reports Content===============", user_reports)
 
-    save_data(reports, "reports")
+    save_data(user_reports, "reports", user_id)
     return {"ok": True, "message": "Record edited successfully", "report": target_report["records"][record_index]}
 
 @router.delete("/reports/delete/{id:path}")
 async def delete_report(id: int, session: dict = Depends(verify_authentication_approval)):
     print("Deleting id ", id)
-    reports = load_data("reports")
     user_id = session.get("user_id")
+    reports = load_data("reports", user_id)
 
-    user_reports = reports.get(str(user_id), {})
-    if not user_reports:
+    if not reports:
         return {"ok": True, "message": "You have no reports"}
     
     records = [
         record 
-        for day_report in user_reports.get("items", {}).values() 
+        for day_report in reports.get("items", {}).values() 
         for record in day_report.get("records", [])
     ]
     record_index = next((i for i,u in enumerate(records) if u.get("id") == id), -1)
     if record_index == -1:
         raise HTTPException(status_code=401, detail="Invalid report index !")
 
-    deleted_record = user_reports["items"][records[record_index].get("date")]["records"].pop(record_index)
+
+    deleted_record = reports["items"][records[record_index].get("day")]["records"].pop(record_index)
+    print("===================================================")
+    print("Deleted Record:", deleted_record)
     if deleted_record.get("content").get("files"):
         res = await delete_dir(f"database/files/reports/{id}")
         if not res.get("ok"):
             raise HTTPException(status_code=401, detail = "An error occured while attempting to delete report")
     
-    reports[str(user_id)].update(user_reports)
-    
-    save_data(reports, "reports")
+    save_data(reports, "reports", user_id)
     return {"ok": True, "message": "Record deleted successfully", "report": deleted_record}
 
 @router.get("/files/{path:path}")
@@ -295,25 +381,35 @@ async def reset_database(authorized: bool = Depends(only_admin)):
     try:
         import json
         from datetime import datetime
+        from pathlib import Path
         
         # Initialize empty data structures
-        config = {
+        config = load_data("config")
+        n_config = {
             "last_user_id": 0,
             "last_post_id": 0,
             "last_record_id": 0,
             "last_file_id": 0,
         }
+        config.update(n_config)
         # users = {}
         sessions = {}
         posts = []
-        reports = {}
         
         # Save all reset data
         save_data(config, "config")
         # save_data(users, "users")
         save_data(sessions, "sessions")
         save_data(posts, "posts")
-        save_data(reports, "reports")
+        
+        # Clear all per-user report files
+        reports_dir = Path("database/reports")
+        if reports_dir.exists():
+            for report_file in reports_dir.glob("*.json"):
+                try:
+                    report_file.unlink()
+                except Exception:
+                    pass
         
         # Clear file directories
         await delete_dir("database/files/posts")
