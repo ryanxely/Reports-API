@@ -10,3 +10,58 @@
 2025-12-15 17:56:19,858 - uvicorn.error - INFO - Waiting for application shutdown.
 2025-12-15 17:56:19,858 - uvicorn.error - INFO - Application shutdown complete.
 2025-12-15 17:56:19,858 - uvicorn.error - INFO - Finished server process [15380]
+2025-12-15 17:57:37,871 - uvicorn.error - INFO - Started server process [16220]
+2025-12-15 17:57:37,871 - uvicorn.error - INFO - Waiting for application startup.
+2025-12-15 17:57:37,872 - uvicorn.error - INFO - Application startup complete.
+2025-12-15 17:57:37,873 - uvicorn.error - INFO - Uvicorn running on http://0.0.0.0:82 (Press CTRL+C to quit)
+2025-12-15 17:58:03,197 - uvicorn.access - INFO - 192.168.1.136:51409 - "GET / HTTP/1.1" 304
+2025-12-15 17:58:05,753 - uvicorn.access - INFO - 192.168.1.136:51409 - "GET / HTTP/1.1" 200
+2025-12-15 17:58:07,216 - uvicorn.access - INFO - 192.168.1.136:51409 - "GET /view.html HTTP/1.1" 304
+2025-12-15 17:58:07,244 - uvicorn.access - INFO - 192.168.1.136:51409 - "GET /styles/view.css HTTP/1.1" 304
+2025-12-15 17:58:07,291 - uvicorn.access - INFO - 192.168.1.136:51409 - "GET /api/reports HTTP/1.1" 200
+2025-12-15 18:07:26,603 - uvicorn.access - INFO - 192.168.1.136:51425 - "GET /view.html HTTP/1.1" 200
+2025-12-15 18:07:26,809 - uvicorn.access - INFO - 192.168.1.136:51425 - "GET /api/reports HTTP/1.1" 200
+2025-12-15 18:07:26,840 - uvicorn.access - INFO - 192.168.1.136:63280 - "GET /favicon.ico HTTP/1.1" 200
+2025-12-15 18:10:59,318 - uvicorn.access - INFO - 192.168.1.136:51458 - "GET /view.html HTTP/1.1" 200
+2025-12-15 18:10:59,565 - uvicorn.access - INFO - 192.168.1.136:51458 - "GET /api/reports HTTP/1.1" 200
+2025-12-15 18:11:35,911 - uvicorn.access - INFO - 192.168.1.136:51461 - "GET /view.html HTTP/1.1" 200
+2025-12-15 18:11:35,951 - uvicorn.access - INFO - 192.168.1.136:51461 - "GET /js/storage.js HTTP/1.1" 304
+2025-12-15 18:11:35,984 - uvicorn.access - INFO - 192.168.1.136:51461 - "GET /api/reports HTTP/1.1" 200
+2025-12-15 18:11:36,767 - uvicorn.access - INFO - 192.168.1.136:51461 - "GET /view.html HTTP/1.1" 200
+2025-12-15 18:11:36,810 - uvicorn.access - INFO - 192.168.1.136:51461 - "GET /api/reports HTTP/1.1" 200
+2025-12-15 18:12:53,061 - uvicorn.access - INFO - 192.168.1.136:51463 - "GET /view.html HTTP/1.1" 200
+2025-12-15 18:12:53,277 - uvicorn.access - INFO - 192.168.1.136:51463 - "GET /api/reports HTTP/1.1" 200
+2025-12-15 18:13:14,315 - uvicorn.access - INFO - 192.168.1.136:51466 - "GET /api/reports HTTP/1.1" 200
+2025-12-15 18:14:11,526 - uvicorn.access - INFO - 192.168.1.136:51480 - "GET / HTTP/1.1" 200
+2025-12-15 18:14:11,553 - uvicorn.access - INFO - 192.168.1.136:51480 - "GET /styles/quill.snow.css HTTP/1.1" 200
+2025-12-15 18:14:11,572 - uvicorn.access - INFO - 192.168.1.136:51481 - "GET /js/quill.min.js HTTP/1.1" 200
+2025-12-15 18:14:11,572 - uvicorn.access - INFO - 192.168.1.136:51482 - "GET /styles/index.css HTTP/1.1" 200
+2025-12-15 18:14:11,575 - uvicorn.access - INFO - 192.168.1.136:51483 - "GET /config.js HTTP/1.1" 200
+2025-12-15 18:14:11,578 - uvicorn.access - INFO - 192.168.1.136:51480 - "GET /js/dom-helpers.js HTTP/1.1" 200
+2025-12-15 18:14:11,582 - uvicorn.access - INFO - 192.168.1.136:51484 - "GET /js/storage.js HTTP/1.1" 200
+2025-12-15 18:14:11,584 - uvicorn.access - INFO - 192.168.1.136:51485 - "GET /js/api.js HTTP/1.1" 200
+2025-12-15 18:14:11,593 - uvicorn.access - INFO - 192.168.1.136:51482 - "GET /js/file-previews.js HTTP/1.1" 200
+2025-12-15 18:14:12,365 - uvicorn.access - INFO - 192.168.1.136:51480 - "GET /login.html HTTP/1.1" 200
+2025-12-15 18:14:12,423 - uvicorn.access - INFO - 192.168.1.136:63308 - "GET /favicon.ico HTTP/1.1" 200
+2025-12-15 18:14:12,447 - uvicorn.access - INFO - 192.168.1.136:51480 - "GET /styles/login.css HTTP/1.1" 200
+2025-12-15 18:14:16,989 - uvicorn.access - INFO - 192.168.1.136:51480 - "POST /api/auth/login HTTP/1.1" 401
+2025-12-15 18:14:28,868 - uvicorn.access - INFO - 192.168.1.136:51486 - "POST /api/auth/login HTTP/1.1" 200
+2025-12-15 18:14:29,676 - uvicorn.access - INFO - 192.168.1.136:51486 - "GET /otp.html HTTP/1.1" 200
+2025-12-15 18:14:29,709 - uvicorn.access - INFO - 192.168.1.136:51486 - "GET /styles/otp.css HTTP/1.1" 200
+2025-12-15 18:15:46,145 - uvicorn.access - INFO - 192.168.1.136:51492 - "POST /api/auth/login/verify?code=10323 HTTP/1.1" 200
+2025-12-15 18:15:46,189 - uvicorn.access - INFO - 192.168.1.136:51492 - "GET /api/profile HTTP/1.1" 200
+2025-12-15 18:15:46,941 - uvicorn.access - INFO - 192.168.1.136:51492 - "GET /index.html HTTP/1.1" 200
+2025-12-15 18:15:49,376 - uvicorn.access - INFO - 192.168.1.136:51492 - "GET /view.html HTTP/1.1" 200
+2025-12-15 18:15:49,410 - uvicorn.access - INFO - 192.168.1.136:51492 - "GET /styles/utils.css HTTP/1.1" 200
+2025-12-15 18:15:49,419 - uvicorn.access - INFO - 192.168.1.136:51495 - "GET /styles/view.css HTTP/1.1" 200
+2025-12-15 18:15:49,458 - uvicorn.access - INFO - 192.168.1.136:51492 - "GET /api/reports HTTP/1.1" 200
+2025-12-15 18:16:16,744 - uvicorn.access - INFO - 192.168.1.136:51496 - "GET /view.html HTTP/1.1" 200
+2025-12-15 18:16:16,806 - uvicorn.access - INFO - 192.168.1.136:51496 - "GET /api/reports HTTP/1.1" 200
+2025-12-15 18:16:17,565 - uvicorn.access - INFO - 192.168.1.136:51496 - "GET /view.html HTTP/1.1" 200
+2025-12-15 18:16:17,609 - uvicorn.access - INFO - 192.168.1.136:51496 - "GET /api/reports HTTP/1.1" 200
+2025-12-15 18:16:18,119 - uvicorn.access - INFO - 192.168.1.136:51496 - "GET /view.html HTTP/1.1" 200
+2025-12-15 18:16:18,159 - uvicorn.access - INFO - 192.168.1.136:51496 - "GET /api/reports HTTP/1.1" 200
+2025-12-15 18:16:18,734 - uvicorn.access - INFO - 192.168.1.136:51496 - "GET /view.html HTTP/1.1" 200
+2025-12-15 18:16:18,767 - uvicorn.access - INFO - 192.168.1.136:51496 - "GET /api/reports HTTP/1.1" 200
+2025-12-15 18:16:19,245 - uvicorn.access - INFO - 192.168.1.136:51496 - "GET /view.html HTTP/1.1" 200
+2025-12-15 18:16:19,280 - uvicorn.access - INFO - 192.168.1.136:51496 - "GET /api/reports HTTP/1.1" 200
