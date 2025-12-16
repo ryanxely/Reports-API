@@ -209,7 +209,7 @@ async def add_report(title: str = Form(...), text: Optional[str] = Form(""), dat
 
 @router.get("/reports")
 def get_reports(session: dict = Depends(verify_authentication_approval)):
-    validate_reports()
+    # validate_reports()
     user_id = session.get("user_id")
     api_key = session.get("api_key")
     
@@ -236,10 +236,10 @@ def get_reports(session: dict = Depends(verify_authentication_approval)):
     user_reports = load_data("reports", user_id)
     return {"ok": True, "reports": user_reports if user_reports else {}}
 
-@router.get("/reports/single", response_model=ReportResponse)
+@router.get("/reports/single")
 def get_single_report(id: int, session: dict = Depends(verify_authentication_approval)):
     """Get a single report by ID."""
-    validate_reports()
+    # validate_reports()
     user_id = session.get("user_id")
     api_key = session.get("api_key")
     
@@ -286,7 +286,6 @@ async def edit_report(id: int = Form(...), date: str = Form(...), title: Optiona
     if not target_report:
         return {"ok": False, "message": f"You sent no reports on the {date}"}
     
-    # Editing possible only in the interval of 3 days
     if target_report.get("validated"):
         return {"ok": False, "message": "You can't edit this reports anymore"}
 

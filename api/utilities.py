@@ -155,7 +155,7 @@ def validate_reports():
             except ValueError:
                 continue
 
-            if (today - report_date).days >= 7 and not report.get("validated"):
+            if (today - report_date).days >= 30 and not report.get("validated"):
                 report["validated"] = True
                 report["validated_by"] = 0
 
