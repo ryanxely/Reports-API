@@ -9,5 +9,5 @@ source YOUR_VENV_NAME/scripts/activate
 2. Install dependencies
 pip install -r requirements.txt
 
-3. Adjust the port on which you want to run the app in 
-3. Run main.py
+3. Adjust the ./config.json and /api/config.json with your app configurations
+4. Run main.py

@@ -8,7 +8,7 @@ from api.models import *
 from api.utilities import *
 
 import json
-appConfig = json.load(open("appconfig.json", "r", encoding="utf-8"))
+appConfig = json.load(open("config.json", "r", encoding="utf-8"))
 
 app = FastAPI(title="Report API", version="1.0.0")
 origins = [
