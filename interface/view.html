@@ -146,16 +146,15 @@
         <!-- Visualize View (admin) -->
         <div id="viewReport" class="view">
             <div class="edit-form">
-                <h2 style="margin-bottom: 12px; color: #2d3748;">Visualisation du rapport</h2>
                 <div id="reportFullTitle"
                     style="font-size:20px;font-weight:700;margin-bottom:8px;color:var(--text-primary);"></div>
                 <div id="reportFullMeta" style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;"></div>
                 <div id="reportFullContent"
-                    style="background:var(--bg-light);padding:16px;border-radius:10px;width:100%;margin-bottom:12px;color:var(--text-secondary);">
+                    style="background:var(--bg-light);border-radius:10px;width:100%;margin-bottom:12px;color:var(--text-primary);">
                 </div>
                 <div id="reportFullAttachments" style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap;"></div>
                 <div class="form-actions">
-                    <button class="btn btn-secondary" onclick="switchView('list')">Retour</button>
+                    <button class="btn btn-primary" onclick="switchView('list')">← Retour</button>
                 </div>
             </div>
         </div>
@@ -168,13 +167,13 @@
                     style="font-size:20px;font-weight:700;margin-bottom:8px;color:var(--text-primary);"></div>
                 <div id="singleReportMeta" style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;"></div>
                 <div id="singleReportContent"
-                    style="background:var(--bg-light);padding:16px;border-radius:10px;width:100%;margin-bottom:12px;color:var(--text-secondary);">
+                    style="background:var(--bg-light);border-radius:10px;width:100%;margin-bottom:12px;color:var(--text-primary);">
                 </div>
                 <div id="singleReportAttachments" style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap;"></div>
                 <div id="singleReportExtraFields" style="margin-bottom:12px;"></div>
                 <div class="form-actions">
-                    <button class="btn btn-secondary" onclick="backFromSingleReport()">← Retour</button>
-                    <button class="btn" id="shareReportBtn" style="background:#009688;color:white;" >📤 Partager</button>
+                    <button class="btn btn-primary" onclick="backFromSingleReport()">← Retour</button>
+                    <button class="btn btn-primary" id="shareReportBtn" >📤 Partager</button>
                 </div>
             </div>
         </div>
@@ -491,7 +490,7 @@
                                 <div class="report-meta">🕐 Crée le ${report.created_at} ${report.last_edit_at && "• Modifié le "} ${report.last_edit_at} • ID: ${report.id}</div>
                                 <div class="report-content" style="cursor:pointer;" onclick="viewReportDetail(${report.id})">${contentPreview}${cleanText.length > 100 ? '...' : ''}</div>
                                 ${filesHtml}
-                                ${dayData.validated ? `<div class="report-validated">Se Rapport a deja ete validé</div>` : `<div class="report-actions"><button class="btn btn-edit" onclick="viewReportDetail(${report.id})">👁️ Voir</button> <button class="btn btn-edit" onclick="editReport(${report.id}, '${day}')">✏️ Modifier</button> <button class="btn btn-delete" onclick="deleteReport(${report.id})">🗑️ Supprimer</button> <button class="btn" onclick="shareReport(${report.id})" style="background:#52c41a;color:white;">📤 Partager</button></div>`}
+                                ${dayData.validated ? `<div class="report-validated">Se Rapport a deja ete validé</div>` : `<div class="report-actions"><button class="btn btn-edit" onclick="viewReportDetail(${report.id})">👁️ Voir</button> <button class="btn btn-edit" onclick="editReport(${report.id}, '${day}')">✏️ Modifier</button> <button class="btn btn-delete" onclick="deleteReport(${report.id}, '${day}')">🗑️ Supprimer</button> <button class="btn" onclick="shareReport(${report.id})" style="background:#52c41a;color:white;">📤 Partager</button></div>`}
                             </div>
                         `;
                     });
@@ -961,7 +960,7 @@
         });
 
         // ===== Delete Report =====
-        window.deleteReport = async function (reportId) {
+        window.deleteReport = async function (reportId, day) {
             if (!confirm("Êtes-vous sûr de vouloir supprimer ce rapport ?")) {
                 return;
             }
@@ -981,7 +980,7 @@
             if (authToken) headers['Authorization'] = 'Bearer ' + authToken;
 
             try {
-                const response = await fetch(getApiUrl(CONFIG.REPORTS_DELETE + '/' + reportId), {
+                const response = await fetch(getApiUrl(CONFIG.REPORTS_DELETE + '/' + day + '/' + reportId), {
                     method: 'DELETE',
                     headers: headers
                 });
@@ -1156,7 +1155,7 @@
             if (files.length > 0) {
                 files.forEach(f => {
                     const rawPath = f.path || f.name || '';
-                    const subpath = (rawPath || '').replace(/^files[\\/]/i, '').replace(/\\/g, '/');
+                    const subpath = (rawPath || '').replace(/^database\/files[\\/]/i, '').replace(/\\/g, '/');
                     const isImage = /\.(png|jpg|jpeg|gif|webp|bmp|svg)$/i.test(f.name || '');
 
                     if (isImage) {
@@ -1323,8 +1322,9 @@
                 const filesTitle = document.createElement('div');
                 filesTitle.style.fontWeight = '600';
                 filesTitle.style.marginBottom = '8px';
+                filesTitle.style.marginTop = '20px';
                 filesTitle.style.color = 'var(--text-primary)';
-                filesTitle.textContent = '📎 Pièces jointes:';
+                filesTitle.innerHTML = '<h3>Pièces jointes:</h3>';
                 filesTitle.style.flexBasis = '100%';
                 attachmentsEl.appendChild(filesTitle);
 
@@ -1420,9 +1420,10 @@
             const shareUrl = `${window.location.origin}${window.location.pathname}?reportId=${reportId}`;
             
             // Copy to clipboard
-            navigator.clipboard.writeText(shareUrl).then(() => {
+            navigator.clipboard?.writeText(shareUrl).then(() => {
                 displayStatus('Lien copié dans le presse-papiers! 📋', false);
-            }).catch(() => {
+            })
+            if (!navigator.clipboard) {
                 // Fallback for older browsers
                 const textarea = document.createElement('textarea');
                 textarea.value = shareUrl;
@@ -1435,7 +1436,7 @@
                     displayStatus('Erreur lors de la copie du lien', true);
                 }
                 document.body.removeChild(textarea);
-            });
+            };
         }
 
         /**

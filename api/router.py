@@ -70,14 +70,14 @@ def logout(session: dict = Depends(verify_authentication)):
 
 @router.post("/users/add")
 async def add_user(user_in: UserIn, authorized: bool = Depends(only_admin)):
-    config = load_data("config")
-    config["last_user_id"] += 1
-    save_data(config, "config")
+    tracker = load_data("tracker")
+    tracker["last_user_id"] += 1
+    save_data(tracker, "tracker")
 
     users = load_data("users")
     user_in = user_in.dict()
     user_in["fullname"] = user_in["fullname"] or user_in["username"]
-    new_user = {"id": config["last_user_id"]} | user_in.dict() | {"api_key": generate_api_key(), "created_at": now(), "last_edit_at": ""} 
+    new_user = {"id": tracker["last_user_id"]} | user_in.dict() | {"api_key": generate_api_key(), "created_at": now(), "last_edit_at": ""} 
     users[str(new_user.get("id"))] = new_user
     save_data(users, "users")
 
@@ -133,10 +133,10 @@ async def edit_profile(username: Optional[str] = Form(""), fullname: Optional[st
 # Test 
 @router.post("/post/add")
 async def add_post(text: str = Form(""), files: List[UploadFile] = File([])):
-    config = load_data("config")
-    new_post_id = config.get("last_post_id")+1
-    config["last_post_id"] = new_post_id
-    save_data(config, "config")
+    tracker = load_data("tracker")
+    new_post_id = tracker.get("last_post_id")+1
+    tracker["last_post_id"] = new_post_id
+    save_data(tracker, "tracker")
 
     posts = load_data("posts")
     
@@ -156,10 +156,10 @@ async def add_post(text: str = Form(""), files: List[UploadFile] = File([])):
 @router.post("/reports/add")
 async def add_report(title: str = Form(...), text: Optional[str] = Form(""), date: str = Form(""), extra_fields: Optional[str] = Form(""), files: Optional[List[UploadFile]] = File([]), session: dict = Depends(verify_authentication_approval)):
     print("\n>> Adding report...\n>> Received data:", title, text, files, sep=" - ")
-    config = load_data("config")
-    new_record_id = config.get("last_record_id")+1
-    config["last_record_id"] = new_record_id
-    save_data(config, "config")
+    tracker = load_data("tracker")
+    new_record_id = tracker.get("last_record_id")+1
+    tracker["last_record_id"] = new_record_id
+    save_data(tracker, "tracker")
     
     user_id = session.get("user_id")
     
@@ -327,26 +327,25 @@ async def edit_report(id: int = Form(...), date: str = Form(...), title: Optiona
     save_data(user_reports, "reports", user_id)
     return {"ok": True, "message": "Record edited successfully", "report": target_report["records"][record_index]}
 
-@router.delete("/reports/delete/{id:path}")
-async def delete_report(id: int, session: dict = Depends(verify_authentication_approval)):
-    print("Deleting id ", id)
+@router.delete("/reports/delete/{day:path}/{id:path}")
+async def delete_report(id: int, day: str, session: dict = Depends(verify_authentication_approval)):
+    print("Deleting ", day, "/", id)
     user_id = session.get("user_id")
     reports = load_data("reports", user_id)
 
     if not reports:
         return {"ok": True, "message": "You have no reports"}
     
-    records = [
-        record 
-        for day_report in reports.get("items", {}).values() 
-        for record in day_report.get("records", [])
-    ]
-    record_index = next((i for i,u in enumerate(records) if u.get("id") == id), -1)
+    records = reports["items"][day]["records"]
+    record_index = next((i for i, u in enumerate(records) if u.get("id") == id), -1)
+    
     if record_index == -1:
         raise HTTPException(status_code=401, detail="Invalid report index !")
+    print("ndex: ", record_index)
 
-
-    deleted_record = reports["items"][records[record_index].get("day")]["records"].pop(record_index)
+    print("===================================================")
+    print("Reports:", reports["items"][day]["records"])
+    deleted_record = reports["items"][day]["records"].pop(record_index)
     print("===================================================")
     print("Deleted Record:", deleted_record)
     if deleted_record.get("content").get("files"):
@@ -383,20 +382,20 @@ async def reset_database(authorized: bool = Depends(only_admin)):
         from pathlib import Path
         
         # Initialize empty data structures
-        config = load_data("config")
-        n_config = {
+        tracker = load_data("tracker")
+        n_tracker = {
             "last_user_id": 0,
             "last_post_id": 0,
             "last_record_id": 0,
             "last_file_id": 0,
         }
-        config.update(n_config)
+        tracker.update(n_tracker)
         # users = {}
         sessions = {}
         posts = []
         
         # Save all reset data
-        save_data(config, "config")
+        save_data(tracker, "tracker")
         # save_data(users, "users")
         save_data(sessions, "sessions")
         save_data(posts, "posts")

@@ -2,6 +2,7 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    font-family: Poppins;
 }
 
 :root {
@@ -606,7 +607,7 @@ ul, ol  {
 .btn-secondary {
     flex: 1;
     padding: 14px;
-    background: var(--bg-light);
+    background: var(--border-light);
     color: var(--text-secondary);
     border: 2px solid var(--border-light);
     border-radius: 12px;
@@ -619,7 +620,7 @@ ul, ol  {
 }
 
 .btn-secondary:hover {
-    background: var(--border-light);
+    box-shadow: 0 8px 24px rgba(114, 120, 120, 0.35);
     border-color: #D1D5DB;
     transform: translateY(-2px);
 }

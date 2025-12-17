@@ -1,0 +1,6 @@
+{
+    "smtp_server": "smtp.galaxyconseils.com",
+    "tls_port": 587,
+    "admin_email": "contact@galaxyconseils.com",
+    "admin_email_password": "Livre1234@"
+}

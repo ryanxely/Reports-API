@@ -7,6 +7,9 @@ from api.router import router
 from api.models import *
 from api.utilities import *
 
+import json
+appConfig = json.load(open("appconfig.json", "r", encoding="utf-8"))
+
 app = FastAPI(title="Report API", version="1.0.0")
 origins = [
     "https://srvgc.tailcca3c2.ts.net",
@@ -41,12 +44,13 @@ async def custom_404_handler(request, exc):
 
 if __name__ == "__main__":
     import uvicorn
+    import uvicorn
     import logging
     logging.basicConfig(
         filename="app.log",
         level=logging.INFO,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
-    uvicorn.run(app, host="0.0.0.0", port=82, log_config=None)
+    uvicorn.run(app, host="0.0.0.0", port=appConfig.get("port"), log_config=None)
     # validate_reports()
 

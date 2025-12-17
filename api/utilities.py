@@ -10,16 +10,15 @@ def load_data(object_category, user_id=None):
         data_file = f"database/reports/{user_id}.json"
     else:
         data_file = f"database/{object_category}.json"
-    
+
     if not Path(data_file).exists():
-        if object_category != "reports":
-            if files := sorted(Path("database").glob(f"{object_category}_*.json"), reverse=True):
-                data_file = str(files[0])
-            else:
-                return {}
+        if object_category == "reports":
+            return {}
+
+        if files := sorted(Path("database").glob(f"{object_category}_*.json"), reverse=True):
+            data_file = str(files[0])
         else:
             return {}
-        
     import json
     with open(data_file, "r", encoding="utf-8") as f:
         try:
@@ -43,9 +42,9 @@ def save_data(data, object_category="reports", user_id=None):
         json.dump(data, f, ensure_ascii=False, indent=4)
 
 async def save_file(f: UploadFile, path: str):
-    config = load_data("config")
-    config["last_file_id"] = config["last_file_id"] + 1
-    new_file_id = config["last_file_id"]
+    tracker = load_data("trackerr")
+    tracker["last_file_id"] = tracker["last_file_id"] + 1
+    new_file_id = tracker["last_file_id"]
     
     folder = Path(path).parent
     ext = f.filename.split(".")[-1]
@@ -56,7 +55,7 @@ async def save_file(f: UploadFile, path: str):
     with open(new_path, "wb") as out_file:
         out_file.write(await f.read())
     
-    save_data(config, "config")
+    save_data(tracker, "tracker")
     return {"id": new_file_id, "name": f.filename, "type": f.content_type, "path": str(new_path)}
 
 async def save_profile_image(profile_image: UploadFile, user_id: int):    
@@ -69,7 +68,7 @@ async def save_profile_image(profile_image: UploadFile, user_id: int):
     with open(new_path, "wb") as out_file:
         out_file.write(await profile_image.read())
     
-    save_data(config, "config")
+    save_data(tracker, "tracker")
     return {"name": profile_image.filename, "type": profile_image.content_type, "path": str(new_path)}
 
 async def delete_files(files, target_files):
@@ -170,7 +169,8 @@ def validate_reports():
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-config = load_data("config")
+import json
+config = json.load(open("config.json", "r", encoding="utf-8"))
 def send_verification_code(recipient_email, code):
     # SMTP server details
     smtp_server, port, sender_email, password = config.get("smtp_server"), config.get("tls_port"), config.get("admin_email"), config.get("admin_email_password")

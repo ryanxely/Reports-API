@@ -397,7 +397,7 @@
 
                 const json = await res.json();
                 if (json && json.ok) {
-                    showStatus(`✅ Rapport soumis avec succès. <b><a href='http://localhost/view.html?reportId=${json.report?.id}'>Voir le rapport</a></b>`);
+                    showStatus(`✅ Rapport soumis avec succès. <b><a href='${window.location.origin}/view.html?reportId=${json.report?.id}'>Voir le rapport</a></b>`);
 
                     // Réinitialiser le formulaire
                     document.getElementById("title").value = "";
